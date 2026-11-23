@@ -1,5 +1,9 @@
 # Changes
 
+## 2.0.1 (23/11/2026)
+
+- Installer: it stopped while creating the shortcuts (two PowerShell variables differed only by case). Fixed.
+
 ## 2.0.0 (23/11/2026): Riffroom
 
 The app gets a new name, **Riffroom** (it was "Sala de Ensaio"), and a new license, **GPL-3.0-or-later** (1.0.0 was MIT).

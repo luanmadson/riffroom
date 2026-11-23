@@ -36,7 +36,7 @@ $Shortcuts = @(
 )
 
 $ui = (Get-UICulture).TwoLetterISOLanguageName
-$L = if ($ui -eq 'pt') { 'pt' } elseif ($ui -eq 'es') { 'es' } else { 'en' }
+$Lang = if ($ui -eq 'pt') { 'pt' } elseif ($ui -eq 'es') { 'es' } else { 'en' }
 $M = @{
   en = @{ uninst = 'Removing the shortcuts, the AI registration and the app''s Python environment'; kept = 'Done. Your songs, takes and settings ({0}) stay where they are.'
           py = 'Looking for Python (3.10 or newer)'; nopy = 'Python 3.10 or newer was not found.'; getpy = 'Install Python (free) from https://www.python.org/downloads/  or, in PowerShell:  winget install Python.Python.3.13'
@@ -69,7 +69,7 @@ $M = @{
           sc = 'Creando los accesos directos "Riffroom" (Escritorio y menú Inicio)'; claude = 'Registrando Riffroom para asistentes de IA (MCP)'
           open = 'Abriendo Riffroom'; done = '¡Listo! Ábrelo desde el acceso directo "Riffroom".'; desc = 'Tocar y grabar junto con la banda separada' }
 }
-function T([string]$k) { return $M[$L][$k] }
+function T([string]$k) { return $M[$Lang][$k] }   # PowerShell names ignore case: never call another variable $l
 function Step([string]$t) { Write-Host ''; Write-Host "== $t" -ForegroundColor Cyan }
 
 if ($Uninstall) {
@@ -153,13 +153,13 @@ if (-not $NoDemo) {
 Step (T 'sc')
 $ws = New-Object -ComObject WScript.Shell
 foreach ($s in $Shortcuts) {
-  $l = $ws.CreateShortcut($s)
-  $l.TargetPath = $Pyw
-  $l.Arguments = "-I -X utf8 `"$App`""
-  $l.WorkingDirectory = $Root
-  $l.IconLocation = "$Icon,0"
-  $l.Description = (T 'desc')
-  $l.Save()
+  $lnk = $ws.CreateShortcut($s)
+  $lnk.TargetPath = $Pyw
+  $lnk.Arguments = "-I -X utf8 `"$App`""
+  $lnk.WorkingDirectory = $Root
+  $lnk.IconLocation = "$Icon,0"
+  $lnk.Description = (T 'desc')
+  $lnk.Save()
   Write-Host "  $s"
 }
 
