@@ -1,0 +1,6 @@
+# Sala de Ensaio: bibliotecas (todas grátis e de código aberto)
+numpy>=1.26
+scipy>=1.11
+soundfile>=0.12.1
+sounddevice>=0.5
+lameenc>=1.7

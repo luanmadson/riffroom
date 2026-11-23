@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<title>Sala de Ensaio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/web/icone.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/web/estilo.css">
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca"><img src="/web/icone.svg" alt=""><span>Sala de Ensaio</span></div>
+  <select id="sel-musica" title="Escolher a música"></select>
+  <div class="topo-dir">
+    <div class="menu-wrap">
+      <button id="chip-entrada" class="chip" title="De onde vem a sua guitarra"><span class="bola"></span><span class="tx">Entrada</span> ▾</button>
+      <div id="menu-entrada" class="menu" hidden></div>
+    </div>
+    <div class="menu-wrap">
+      <button id="chip-saida" class="chip" title="Onde a banda toca"><span class="tx">Saída</span> ▾</button>
+      <div id="menu-saida" class="menu" hidden>
+        <button data-saida="pc">Caixa ou fone do computador<small id="saida-pc-dica">A banda toca na saída padrão do Windows; a guitarra, no amp ou no fone da sua interface.</small></button>
+        <button data-saida="interface"><span id="saida-int-tx">Pela interface</span><small id="saida-int-dica">A banda toca junto com a guitarra, na saída da interface (fone ou amp).</small></button>
+      </div>
+    </div>
+    <button id="btn-tempo" class="chip" title="Mede o atraso do computador para as gravações entrarem no tempo"><span class="bola"></span><span class="tx">Acertar o tempo</span></button>
+    <button id="btn-ajuda" class="chip redondo" title="O que é cada coisa (tecla ?)">?</button>
+  </div>
+</header>
+
+<section class="agora" id="agora">
+  <div class="cartao atual" id="cartao-atual">
+    <div class="rotulo">AGORA</div>
+    <div class="atual-corpo">
+      <div class="acorde-info">
+        <div class="acorde-nome"><span id="ag-nome">—</span><span id="ag-grau" class="grau"></span></div>
+        <div id="ag-desc" class="acorde-desc"></div>
+        <div id="contador" class="contador"></div>
+        <div id="contador-leg" class="contador-leg"></div>
+      </div>
+      <div id="ag-desenho" class="desenho"></div>
+    </div>
+    <div id="contagem" class="contagem-grande" hidden>
+      <div class="titulo">Prepare-se: entre no próximo UM</div>
+      <div class="nums"><span>1</span><span>2</span><span>3</span><span>4</span></div>
+      <div class="dica">Contagem de 4 pulsos (tecla C liga e desliga)</div>
+    </div>
+  </div>
+  <div class="cartao proximo">
+    <div class="rotulo">PRÓXIMO</div>
+    <div class="prox-corpo">
+      <div>
+        <div class="prox-nome"><span id="px-nome">—</span><span id="px-grau" class="grau"></span></div>
+        <div id="px-quando" class="prox-quando"></div>
+      </div>
+      <div id="px-desenho" class="desenho pequeno"></div>
+    </div>
+    <div class="onde">
+      <div id="onde-sec" class="onde-sec">—</div>
+      <div id="onde-comp" class="onde-comp"></div>
+      <div class="onde-tempo"><span id="tempo-atual">0:00</span> de <span id="tempo-total">0:00</span></div>
+    </div>
+  </div>
+</section>
+
+<main class="centro">
+  <section class="linha" id="linha">
+    <canvas id="cv"></canvas>
+    <div id="linha-dica" class="linha-dica" hidden></div>
+  </section>
+  <section class="paineis">
+    <div class="painel banda" id="painel-banda">
+      <div class="painel-topo">
+        <h2>Banda</h2>
+        <div class="modos" id="modos"><span>Você vai tocar:</span></div>
+      </div>
+      <div id="partes" class="partes"></div>
+      <div class="painel-pe">Com tudo em 0 dB, a banda soa como no disco. Dois cliques no volume voltam para 0.</div>
+    </div>
+    <div class="painel tentativas" id="painel-tent">
+      <div class="painel-topo">
+        <h2>Suas tentativas</h2>
+        <div class="acoes-topo">
+          <button id="btn-exp-mix" class="botao-pequeno" title="Grava em MP3 o que está tocando agora (o trecho, se estiver repetindo)">Exportar mistura (MP3)</button>
+          <button id="btn-pasta" class="botao-pequeno" title="Abre a pasta das tentativas no Explorer">Abrir pasta</button>
+        </div>
+      </div>
+      <div id="lista" class="lista"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="transporte">
+  <div class="tr-esq">
+    <button id="b-inicio" class="tb" title="Voltar ao começo (Home)">⏮<small>Home</small></button>
+    <button id="b-ant" class="tb" title="Compasso anterior (seta para a esquerda)">◀◀<small>←</small></button>
+    <button id="b-tocar" class="tb grande" title="Tocar e pausar (Espaço)"><span id="b-tocar-ic">▶</span><span id="b-tocar-tx">Tocar</span><small>Espaço</small></button>
+    <button id="b-prox" class="tb" title="Próximo compasso (seta para a direita)">▶▶<small>→</small></button>
+    <button id="b-gravar" class="tb gravar" title="Gravar uma tentativa (R)"><span class="ponto"></span><span id="b-gravar-tx">Gravar</span><small>R</small></button>
+  </div>
+  <div class="tr-meio">
+    <button id="b-trecho" class="alterna" aria-pressed="false" title="Repetir o trecho marcado na linha do tempo (L)">🔁 Repetir trecho<small>L</small></button>
+    <button id="b-contagem" class="alterna" aria-pressed="true" title="Contar 4 pulsos antes de tocar e de gravar (C)">Contagem<small>C</small></button>
+    <button id="b-metro" class="alterna" aria-pressed="false" title="Um clique em cada pulso; o 1º do compasso é mais forte (M)">Metrônomo<small>M</small></button>
+    <label class="vol-geral" title="Volume da banda (dois cliques: 0 dB)">Volume<input id="vol-geral" type="range" min="-30" max="6" step="0.5" value="0"></label>
+  </div>
+  <div class="tr-dir">
+    <div id="medidor-rot" class="medidor-rot">SUA GUITARRA</div>
+    <div class="medidor"><div class="zona"></div><div id="med-barra" class="barra"></div><div id="med-pico" class="pico"></div></div>
+    <div id="med-txt" class="medidor-txt">—</div>
+  </div>
+</footer>
+
+<div id="avisos" class="avisos"></div>
+<div id="ocupado" class="ocupado" hidden><div class="spinner"></div><span class="tx"></span></div>
+<div id="carregando" class="carregando" hidden><div class="spinner"></div><div>Abrindo a música...</div></div>
+
+<dialog id="dlg-tempo">
+  <h3>Acertar o tempo das gravações</h3>
+  <p>Entre a banda sair na caixa e a sua guitarra chegar ao computador existe um pequeno atraso. Este teste mede o atraso uma vez; depois, o app corrige cada gravação sozinho.</p>
+  <ol>
+    <li>Abafe as cordas com a mão esquerda: encostada, sem apertar.</li>
+    <li>Clique em <b>Começar</b>. Vão soar <b>8 cliques</b>, um a cada pouco mais de meio segundo.</li>
+    <li>Palhete as cordas abafadas <b>junto com cada clique</b> ("tchk"), com firmeza.</li>
+  </ol>
+  <div id="tempo-status" class="tempo-status"></div>
+  <div class="dlg-botoes">
+    <button id="tempo-fechar" class="botao" autofocus>Fechar</button>
+    <button id="tempo-comecar" class="botao primario">Começar</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-ajuda">
+  <h3>O que é cada coisa</h3>
+  <div class="ajuda-lista">
+    <h4>AGORA e PRÓXIMO</h4>
+    <p>O acorde que está soando, com o <b>grau</b> (I, IV, ♭VII…: a distância até a nota principal da música) e o desenho no braço. Embaixo, os pulsos do compasso, cada um dividido em 3 (num 12/8: conte "1-na-na, 2-na-na…") ou em 2 (num 4/4: "1-e, 2-e…"). À direita, o próximo acorde e quantos pulsos faltam para ele, a parte da música e o compasso.</p>
+    <h4>Linha do tempo</h4>
+    <p><b>Um clique</b>: vai para o começo daquele compasso. <b>Arrastar</b>: marca um trecho para repetir. <b>Dois cliques numa parte da música</b> (faixa de cima): repete aquela parte inteira. As bordas do trecho marcado podem ser arrastadas.</p>
+    <h4>Banda</h4>
+    <p>Cada instrumento tem botão de ligar e desligar e volume. "Você vai tocar" desliga a parte certa com um clique e define em que parte vai a gravação. Quando você tiver tentativas, cada parte pode tocar a <b>original</b> ou a <b>sua</b>.</p>
+    <h4>Gravar</h4>
+    <p>Aperte <b>Gravar</b> (ou R): vem a contagem, a banda toca e a sua guitarra é gravada pela entrada escolhida no topo (a GT-100 ou outra interface). Aperte de novo (ou Espaço) para parar. Cada gravação vira uma <b>tentativa</b>, já alinhada com a banda. Com "Repetir trecho" ligado, grava uma passada do trecho e para sozinho.</p>
+    <h4>Suas tentativas</h4>
+    <p>▶ toca a tentativa no lugar da original, junto com a banda. ★ marca as boas. No menu ⋯: acertar o tempo da tentativa ouvindo, exportar MP3, renomear e apagar (dá para desfazer).</p>
+    <h4>Medidor</h4>
+    <p>O nível da guitarra chegando ao computador. Verde é bom. Amarelo ou cinza: baixo (suba o volume de saída da pedaleira ou o ganho da interface; na GT-100, o PATCH LEVEL). Vermelho: estourou (abaixe).</p>
+    <h4>Entrada e saída</h4>
+    <p><b>Entrada</b>: de onde vem a guitarra. Com a GT-100 ligada, o app a escolhe sozinho; para outra interface, escolha no menu. <b>Saída</b>: onde a banda toca, na caixa do computador ou na própria interface (junto com a guitarra, no fone ou no amp).</p>
+    <h4>Músicas</h4>
+    <p>No menu das músicas, <b>Adicionar pasta de músicas</b> junta uma pasta com as suas músicas. Cada música fica numa pasta própria, com as faixas separadas de cada instrumento (por exemplo, as que o Demucs gera: drums, bass, vocals…). Na primeira vez que você abre, o app prepara a música sozinho.</p>
+    <h4>Teclas</h4>
+    <div class="teclas">
+      <kbd>Espaço</kbd><span>tocar e pausar (e parar a gravação)</span>
+      <kbd>R</kbd><span>gravar e parar</span>
+      <kbd>Home</kbd><span>voltar ao começo (ou ao começo do trecho)</span>
+      <kbd>← →</kbd><span>compasso anterior e próximo</span>
+      <kbd>L</kbd><span>repetir trecho, liga e desliga</span>
+      <kbd>C</kbd><span>contagem, liga e desliga</span>
+      <kbd>M</kbd><span>metrônomo, liga e desliga</span>
+      <kbd>1 2 3…</kbd><span id="teclas-modos">você vai tocar: os botões do painel Banda, na ordem</span>
+      <kbd>?</kbd><span>esta ajuda</span>
+    </div>
+  </div>
+  <div class="dlg-botoes">
+    <button id="ajuda-tour" class="botao">Ver o passo a passo</button>
+    <button id="ajuda-fechar" class="botao primario" autofocus>Fechar</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-tour">
+  <div id="tour-passo" class="tour-passo"></div>
+  <h3 id="tour-titulo"></h3>
+  <p id="tour-texto"></p>
+  <div class="dlg-botoes">
+    <button id="tour-pular" class="botao">Pular</button>
+    <button id="tour-prox" class="botao primario">Próximo</button>
+  </div>
+</dialog>
+
+<script src="/web/app.js"></script>
+</body>
+</html>

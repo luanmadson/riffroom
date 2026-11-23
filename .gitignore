@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# músicas, faixas e gravações ficam fora do repositório
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.aif
+*.aiff
+Gravações/
+.gravando/
