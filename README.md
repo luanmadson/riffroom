@@ -1,194 +1,242 @@
-# Sala de Ensaio
+# Riffroom
 
-Toque e grave junto com a banda separada: cada instrumento numa faixa, o acorde e o pulso na tela, e as suas gravações já alinhadas com a música.
+Play and record along with the separated band: the chord and the beat on screen, and your takes aligned with the music and analyzed bar by bar. It works with an AI assistant too.
 
-![Tela da Sala de Ensaio com a música de demonstração](docs/tela.png)
+**English** · [Português](README.pt-BR.md) · [Español](README.es.md)
 
-Feito para estudar guitarra em casa, com a pedaleira ligada no computador pela USB (testado com a BOSS GT-100), no lugar de um editor de áudio genérico. Funciona com qualquer interface de áudio. É grátis e não usa a nuvem: as músicas e as gravações ficam no seu computador.
+![Riffroom with the demo song](docs/screenshot-en.png)
 
-## O que ele faz
+Riffroom was made for practicing guitar at home with a multi-effects pedal connected by USB (tested with a BOSS GT-100), but it works with any audio interface and any instrument. It is free and open source (GPL-3.0). Everything runs on your computer: your songs and recordings never go to the cloud.
 
-- **Banda separada**: liga, desliga e muda o volume de cada parte (bateria, baixo, guitarras, voz…). Com tudo em 0 dB, a banda soa como no disco.
-- **"Você vai tocar"**: um clique desliga a parte que você vai tocar e define em que parte a gravação entra.
-- **Painel AGORA**: o acorde que está soando, o grau (I, IV, V…), o desenho no braço e o próximo acorde, com os pulsos do compasso acendendo no tempo (12/8 ou 4/4).
-- **Linha do tempo**: mostra as partes da música, os acordes e a onda. Um clique leva ao compasso, arrastar marca um trecho para repetir e dois cliques repetem uma parte inteira.
-- **Contagem** de 4 pulsos antes de tocar ou gravar, de qualquer ponto, e **metrônomo**.
-- **Tentativas**:
-  - um botão grava, e cada gravação vira uma tentativa já alinhada com a banda (FLAC de 24 bits);
-  - o app mede uma vez o atraso do computador ("Acertar o tempo") e corrige a diferença de relógio entre a interface e a placa de som.
-- **Comparar**:
-  - cada parte toca a original ou uma tentativa sua;
-  - dá para marcar favoritas, renomear e apagar (com desfazer).
-- **MP3** da tentativa ou da mistura, para ouvir no celular.
-- **Medidor** do nível da guitarra, com a dica do que ajustar.
+## What it does
 
-## Do que precisa
+- **The band, separated**: turn each part (drums, bass, guitars, vocals…) on and off and set its volume. With everything at 0 dB, the band sounds like the record.
+- **"You will play"**: one click mutes the part you are going to play and sets where the recording goes.
+- **NOW panel**:
+  - the chord that is sounding, its degree (I, IV, V…) and its shape on the neck;
+  - the next chord;
+  - the beats of the bar lighting up in time (12/8 or 4/4).
+- **Timeline**: shows the sections, the chords and the waveform.
+  - A click goes to that bar.
+  - Dragging marks a part to loop.
+  - Double-clicking a section loops that whole section.
+- **Count-in and metronome**: 4 beats before playing or recording, from any point.
+- **Takes**:
+  - one button records, and each take comes out already aligned with the band (24-bit FLAC);
+  - Riffroom measures the delay of your computer once ("Fix the timing") and corrects the clock drift between the interface and the sound card.
+- **Timing analysis** of each take, against the original part or the beat:
+  - early or late, and how consistent you are;
+  - which bars to practice, and where you rushed or dragged.
+- **Compare**:
+  - each part plays the original or one of your takes;
+  - mark favorites, rename, delete (with undo), export MP3.
+- **Import a song with AI**: turn an MP3 into a practice song, on your computer.
+  1. [Demucs](https://github.com/adefossez/demucs) separates the instruments.
+  2. [beat-this](https://github.com/CPJKU/beat_this) finds the beats and the bars.
+  3. Riffroom suggests the chords.
+- **Made for AI assistants**: an [MCP](https://modelcontextprotocol.io) server lets Claude (Desktop or Code), or any MCP client, drive Riffroom and coach you (see [With an AI assistant](#with-an-ai-assistant)).
+- **Three languages**: English, Portuguese and Spanish.
 
-- Windows 10 ou 11. A janela do app é a do Edge, que já vem no Windows.
-- Python 3.10 ou mais novo (testado no 3.13), grátis em [python.org](https://www.python.org/downloads/).
-- Uma interface de áudio para a guitarra: pedaleira com USB (como a BOSS GT-100), placa de som externa ou a entrada do próprio computador.
-- As músicas em faixas separadas (veja [Suas músicas](#suas-músicas)).
+## Requirements
 
-## Instalar
+- Windows 10 or 11. The app window is Microsoft Edge, which comes with Windows.
+- Python 3.10 or newer (tested with 3.13), free at [python.org](https://www.python.org/downloads/).
+- An audio interface for your instrument: a pedal with USB (like the BOSS GT-100), a sound card, or the computer's own input.
+- For the local AI (optional): about 1.5 GB of disk.
 
-1. Baixe o projeto. Pode ser o ZIP da [última versão](https://github.com/luanmadson/sala-de-ensaio/releases/latest), que você extrai, ou:
+## Install
+
+1. Download the [latest release](https://github.com/luanmadson/riffroom/releases/latest) ZIP and extract it, or run:
    ```
-   git clone https://github.com/luanmadson/sala-de-ensaio
+   git clone https://github.com/luanmadson/riffroom
    ```
-2. Dê dois cliques em **`instalar.bat`**. Ele:
-   - cria o ambiente Python do app em `%LOCALAPPDATA%\SalaDeEnsaio\venv`, fora das pastas sincronizadas;
-   - instala as bibliotecas: numpy, scipy, soundfile, sounddevice e lameenc;
-   - gera a **música de demonstração**, um blues em Lá sintetizado pelo próprio app;
-   - cria o atalho **Sala de Ensaio** na Área de Trabalho e no menu Iniciar, e abre o app.
+2. Double-click **`install.bat`**. It:
+   - creates the app's Python environment in `%LOCALAPPDATA%\Riffroom\venv`;
+   - installs the libraries;
+   - makes the **demo song** (a slow blues in A, synthesized by Riffroom itself);
+   - creates the **Riffroom** shortcut on the Desktop and in the Start menu;
+   - registers Riffroom for Claude Code and Claude Desktop, when they are installed;
+   - opens the app.
 
-Se o Windows avisar que o arquivo veio da internet, clique em "Mais informações" e depois em "Executar assim mesmo".
+Options (also work with `install.bat`):
 
-Para remover, rode `instalar.bat -Desinstalar`. As músicas e as gravações ficam onde estão.
+| Option | What it does |
+|---|---|
+| `-AI` | Installs the local AI: PyTorch for CPU, Demucs, beat-this and librosa (~1.5 GB). |
+| `-AI -GPU` | The same, with PyTorch for NVIDIA cards (CUDA, ~3 GB). Separating takes seconds instead of minutes. |
+| `-Language pt` | Starts in Portuguese (`es` for Spanish). You can also change it later in the app. |
+| `-Library FOLDER` | Adds a folder of songs. |
+| `-NoClaude` | Does not register Riffroom with AI assistants. |
+| `-Uninstall` | Removes the shortcuts, the registration and the environment. Your songs and takes stay. |
 
-## Primeiros passos
+If Windows warns that the file came from the internet, click "More info", then "Run anyway".
 
-1. Abra o app pelo atalho. Na primeira vez, um passo a passo mostra cada área da tela.
-2. No topo, confira:
-   - a **Entrada**, de onde vem a guitarra (a GT-100 é escolhida sozinha);
-   - a **Saída**, onde a banda toca: na caixa do computador ou na própria interface.
-3. Faça uma vez o **Acertar o tempo**: abafe as cordas e palhete junto com 8 cliques. Leva uns 10 segundos.
-4. Em **Você vai tocar**, escolha a parte e aperte **Gravar** (tecla R). Depois, o ▶ da tentativa toca a sua gravação no lugar da original.
+## First steps
 
-## Suas músicas
+1. Open Riffroom from the shortcut. The first time, a short tour shows each area.
+2. At the top, check:
+   - the **Input**, where your guitar comes from (the GT-100 is picked automatically);
+   - the **Output**, where the band plays: the computer speakers, or the interface itself.
+3. Do **Fix the timing** once: mute the strings and strum together with 8 clicks. It takes about 10 seconds.
+4. In **You will play**, choose your part and press **Record** (R).
+5. Press ▶ on the take to hear it in place of the original. The take's **⋯ > Analyze the timing** shows where you rushed or dragged.
 
-O app procura as músicas na pasta `Músicas\Sala de Ensaio` do Windows. Para juntar outras pastas, use **＋ Adicionar pasta de músicas…** no menu das músicas.
+## Your songs
 
-Cada música fica numa pasta própria, com as faixas separadas:
+### Import with AI
 
-```
-Sala de Ensaio\
-└── Minha banda\
-    └── Minha música\
-        ├── drums.wav      (ou bateria.wav)
-        ├── bass.wav       (ou baixo.wav)
-        ├── guitar.wav     (ou guitarra.wav, guitarra_base.wav, guitarra_solo.wav)
-        ├── vocals.wav     (ou voz.wav)
-        ├── other.wav      (ou outros.wav)
-        ├── mixture.wav    (opcional: a música inteira, para acertar o volume de cada parte)
-        └── acordes.txt    (opcional: a cifra, veja abaixo)
-```
+In the songs menu, choose **＋ Import a song (MP3, WAV, FLAC)… with AI**. It needs `install.bat -AI`. Riffroom then:
+1. separates the instruments (Demucs `htdemucs_6s`: drums, bass, guitar, piano, vocals, other);
+2. finds the beats and the bars;
+3. adds 4 beats of silence before bar 1 for the count-in;
+4. suggests the chords;
+5. writes everything to `<music folder>\<Artist>\<Title>\`.
 
-Na primeira vez que você abre a música, o app a prepara sozinho e grava um `ensaio.json` na pasta. As faixas podem ser WAV, FLAC, MP3 ou OGG, todas com a mesma taxa de amostragem.
+On a typical CPU, a 6-minute song takes about 2 minutes. The chords are written to `chords.txt` as a **suggestion**: listen and correct them (see the format below), then open the song again.
 
-### Separar os instrumentos com o Demucs
+**How good is it?** We compared the AI with a hand-checked map of a real 12/8 rock song.
+- **Tempo:** within 1 beat per minute.
+- **Bars:** 91% start within 60 ms of the checked ones.
+- **Chords:** the root note is right about 60% of the time. Sus chords are named as power chords or major.
 
-O [Demucs](https://github.com/adefossez/demucs) separa uma música em faixas com IA, no seu computador, sem mandar nada para a internet. Ele instala o PyTorch (alguns GB), então o melhor é instalá-lo num ambiente Python próprio:
+### Folders with separated tracks
 
-```
-pip install demucs
-demucs -n htdemucs_6s "minha música.mp3"
-```
-
-As faixas saem em `separated\htdemucs_6s\minha música\`: drums, bass, guitar, piano, vocals e other. Copie essa pasta para dentro da sua pasta de músicas.
-
-### Compassos, acordes e partes da música (opcional)
-
-Para ver o pulso, o acorde e a contagem, informe o andamento e escreva a cifra. Rode com o Python do app:
+Riffroom also finds songs that you separated yourself. Add the folder from the songs menu (**＋ Add a music folder…**). Each song needs its own folder with the tracks:
 
 ```
-%LOCALAPPDATA%\SalaDeEnsaio\venv\Scripts\python.exe app\preparar_musica.py "<pasta da música>" --bpm 92 --compasso 4/4 --inicio 1.25
+Riffroom\
+└── My band\
+    └── My song\
+        ├── drums.wav      (bass.wav, guitar.wav, vocals.wav, other.wav, piano.wav — the Demucs names)
+        ├── mixture.wav    (optional: the whole song, to set the volume of each part)
+        └── chords.txt     (optional: the chord chart)
 ```
 
-- `--bpm`: pulsos por minuto, o pulso em que você bate o pé. Num 12/8, é a semínima pontuada.
-- `--compasso`: 4/4 (o padrão), 3/4, 6/8, 12/8…
-- `--inicio`: o segundo em que começa o compasso 1.
-- `--titulo`, `--artista`: como aparece no menu das músicas.
-- `--alvos guitarra,voz`: as partes que aparecem em "Você vai tocar".
+Names in Portuguese and Spanish work too (bateria, baixo, guitarra, voz…), as do `rhythm_guitar` and `lead_guitar`. The first time you open the song, Riffroom prepares it by itself.
 
-A cifra fica em `acordes.txt`, na pasta da música, com um compasso por palavra:
+To see the beat, the chords and the count-in, give the tempo. Run it with the app's Python:
+
+```
+%LOCALAPPDATA%\Riffroom\venv\Scripts\python.exe app\prepare.py "<song folder>" --bpm 92 --time-signature 4/4 --first-bar 1.25
+```
+
+| Option | Meaning |
+|---|---|
+| `--bpm` | Beats per minute, the beat you tap your foot to. In 12/8 it is the dotted quarter note. |
+| `--first-bar` | The second where bar 1 starts. |
+| `--tuning -1` | For a guitar tuned a half step down: the chords are named by the shape you play. |
+| `--targets guitar,vocals` | The parts shown in "You will play". |
+
+### Chord chart (`chords.txt`)
+
+One bar per word:
 
 ```
 [Intro]
 A5 % D5 A5
-[Verso]
+[Verse]
 A5 % % %
 D5 % A5 %
 E5 D5,C5 A5 -
 ```
 
-| Sinal | O que quer dizer |
+| Sign | Meaning |
 |---|---|
-| `%` | repete o compasso anterior |
-| `D5,C5` | divide o compasso entre os dois acordes |
-| `-` | compasso sem acorde |
-| `[Nome]` | começa uma parte da música |
-| `#` no início da linha | comentário |
+| `%` | repeats the previous bar |
+| `D5,C5` | splits the bar between the two chords |
+| `-` | a bar with no chord |
+| `[Name]` | starts a section of the song |
+| `#` at the start of a line | a comment |
 
-O app calcula o grau de cada acorde e desenha a digitação. A música de demonstração traz um exemplo completo.
+Riffroom works out the degree of each chord and draws the shape. The demo song has a complete example.
 
-## Teclas
+## With an AI assistant
 
-| Tecla | O que faz |
-|---|---|
-| Espaço | tocar e pausar (e parar a gravação) |
-| R | gravar e parar |
-| Home | voltar ao começo (ou ao começo do trecho) |
-| ← → | compasso anterior e próximo |
-| L | repetir o trecho, liga e desliga |
-| C | contagem, liga e desliga |
-| M | metrônomo, liga e desliga |
-| 1 2 3… | você vai tocar: os botões do painel Banda, na ordem |
-| ? | ajuda |
+Riffroom comes with an MCP server ([app/mcp_server.py](app/mcp_server.py)). With it, an AI assistant can run a practice session for you. For example:
 
-## Onde ficam os arquivos
+- "Open the demo song, loop the solo and record three takes of the rhythm guitar."
+- "Where did I rush? What should I practice?"
+- "Compare my last takes."
+- "Import C:\Music\song.mp3; the guitar is tuned a half step down."
+- "These are the chords of the verse: A5 D5 A5 E5. Write the chart."
 
-| O quê | Onde |
-|---|---|
-| Tentativas | `Gravações\Tentativas\`, dentro da pasta da música (FLAC e uma ficha `.json`) |
-| Tentativas apagadas | `Gravações\Tentativas\Lixeira\` |
-| MP3 exportados | `Gravações\Exportados\` |
-| Configuração e registro | `%LOCALAPPDATA%\SalaDeEnsaio\` (pastas de músicas, entrada e ajuste do tempo) |
+The assistant sees only what the tools return: the structure of the song, the state of the app and the timing analyses, never your audio. The tools are:
+- songs: `list_songs`, `open_song`, `get_song_map`;
+- playback: `play`, `pause`, `set_loop`, `clear_loop`;
+- the band: `set_part`, `set_target`, `set_options`;
+- recording and takes: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take`, `analyze_take`, `compare_takes`, `export_mp3`;
+- preparing songs: `set_chords`, `prepare_song`, `import_song`, `get_job`;
+- `calibrate_latency` and `get_status`.
 
-## Como funciona
+There is also a `coach_session` prompt.
 
-- **`app/sala_de_ensaio.py`**:
-  - um servidor local, só em 127.0.0.1, feito com a biblioteca padrão do Python;
-  - a janela é a do Edge em modo app;
-  - a tela fala com o servidor por JSON e recebe os eventos por SSE.
-- **`app/motor.py`**: o áudio, com o [sounddevice](https://python-sounddevice.readthedocs.io) (PortAudio, WASAPI):
-  - mistura as partes, o trecho, a contagem e o metrônomo, sem estalos;
-  - grava a entrada e guarda a hora de cada bloco.
-- **Alinhamento**:
-  1. O PortAudio informa a hora em que cada bloco sai na caixa e a hora em que cada bloco entra.
-  2. Com isso, a primeira amostra gravada fica ligada à posição da música que estava soando naquele instante.
-  3. Uma reta pelas horas mede a diferença entre o relógio da interface e o da placa de som. Se a diferença passar de 1,5 ms na gravação, a tentativa é reamostrada.
-  4. O "Acertar o tempo" mede o atraso que sobra, o do caminho da guitarra, com cliques e palhetadas abafadas.
-- **`app/tentativas.py`**: alinha, guarda, organiza e exporta (o MP3 é feito com o [lameenc](https://github.com/chrisstaite/lameenc)).
-- **`app/preparar_musica.py`**:
-  - reconhece as faixas;
-  - acerta o volume de cada parte por mínimos quadrados contra a música inteira;
-  - monta os compassos, os acordes e as partes da música.
-- **`app/web/`**: a tela, em HTML, CSS e JavaScript puros, sem bibliotecas de fora.
-- **`demo/gerar_demo.py`**: sintetiza a música de demonstração (bateria, baixo e guitarras por Karplus-Strong e síntese aditiva).
-
-## Testes
+`install.bat` registers the server automatically. To do it by hand:
 
 ```
-%LOCALAPPDATA%\SalaDeEnsaio\venv\Scripts\python.exe -X utf8 testes\testes.py
+claude mcp add riffroom --scope user -- "%LOCALAPPDATA%\Riffroom\venv\Scripts\python.exe" -I -X utf8 "<folder>\app\mcp_server.py"
 ```
 
-Os testes não precisam de aparelho de som.
+For Claude Desktop, add this to `%APPDATA%\Claude\claude_desktop_config.json`, then restart Claude Desktop:
 
-## Licença
+```json
+{ "mcpServers": { "riffroom": { "command": "C:\\Users\\<you>\\AppData\\Local\\Riffroom\\venv\\Scripts\\python.exe",
+                                 "args": ["-I", "-X", "utf8", "<folder>\\app\\mcp_server.py"] } } }
+```
 
-[MIT](LICENSE). As bibliotecas usadas têm as próprias licenças:
-- numpy, scipy e soundfile: BSD;
-- sounddevice: MIT;
-- lameenc: LGPL.
+If Riffroom is closed when the assistant needs it, the server opens it.
 
----
+## Keys
 
-### In English
+| Key | What it does |
+|---|---|
+| Space | play and pause (and stop recording) |
+| R | record and stop |
+| Home | back to the start (or to the start of the loop) |
+| ← → | previous and next bar |
+| L | loop on and off |
+| C | count-in on and off |
+| M | metronome on and off |
+| 1 2 3… | "you will play": the buttons of the Band panel, in order |
+| ? | help |
 
-Sala de Ensaio ("rehearsal room") is a Windows app to play and record along with a song split into stems (drums, bass, guitars, vocals…). The interface is in Portuguese.
+## Where the files go
 
-- It shows the current chord with its scale degree and fingering, a beat counter (12/8 or 4/4) and a timeline with sections and loops.
-- It records takes that are aligned with the band automatically: the clock drift between the audio interface and the sound card is measured and corrected.
-- To install, run `instalar.bat` (it needs Python 3.10 or newer).
-- Stems from Demucs (`drums.wav`, `bass.wav`, `vocals.wav`…) are recognized automatically.
-- MIT license.
+| What | Where |
+|---|---|
+| Takes | `Takes\`, in the song folder: FLAC plus a `.json` record. In Portuguese, `Gravações\Tentativas\`; in Spanish, `Grabaciones\Tomas\`. The folder that already exists is used. |
+| Deleted takes | `Takes\Trash\` |
+| Exported MP3 | `Exports\` |
+| Settings and log | `%LOCALAPPDATA%\Riffroom\` (music folders, language, input, timing fix, the mix of each song) |
+
+## How it works
+
+- **[app/riffroom.py](app/riffroom.py)**: a local server, on 127.0.0.1 only, that refuses requests from other sites. The window is Edge in app mode. The screen ([app/web/](app/web/), plain HTML/CSS/JS) talks to the server with JSON and receives events by SSE.
+- **[app/engine.py](app/engine.py)**: the audio, with [sounddevice](https://python-sounddevice.readthedocs.io) (PortAudio, WASAPI). It mixes the parts, the loop, the count-in and the metronome without clicks, and records the input along with the time of each block.
+- **Alignment**:
+  1. PortAudio reports when each output block reaches the speakers and when each input block arrives.
+  2. That ties the first recorded sample to the position of the song that was sounding at that instant.
+  3. A line fitted through those times measures the drift between the interface clock and the sound card clock. If the difference passes 1.5 ms over the take, the take is resampled.
+  4. "Fix the timing" measures what is left, the latency of the guitar path.
+- **[app/analysis.py](app/analysis.py)**:
+  - finds each strum with log spectral flux, refined to about 1 ms on the envelope above 1.5 kHz (the pick transient, which survives distortion and compression);
+  - matches each strum to the beat subdivisions and to the attacks of the original part.
+- **[app/ai/](app/ai/)**: Demucs, beat-this, and chord suggestions from chroma (librosa) per beat, with chord templates and Viterbi smoothing. When the bar starts are unclear, the bar length (12/8 against 6/8) is chosen with the help of the chord changes.
+- **[app/prepare.py](app/prepare.py)**: recognizes the tracks, sets the volume of each part by least squares against the whole song, and builds the bars, chords and sections.
+- **[demo/make_demo.py](demo/make_demo.py)**: synthesizes the demo song (Karplus-Strong guitars and bass, synthesized drums).
+
+## Tests
+
+```
+%LOCALAPPDATA%\Riffroom\venv\Scripts\python.exe -X utf8 tests\run_tests.py
+```
+
+The tests need no audio device. The AI tests run only when the local AI is installed.
+
+## License
+
+[GPL-3.0-or-later](LICENSE). Version 1.0.0, released as "Sala de Ensaio", was MIT-licensed.
+
+Riffroom builds on:
+- numpy, scipy, soundfile, librosa and PyTorch (BSD/ISC);
+- sounddevice, the MCP SDK, Demucs and beat-this (MIT);
+- lameenc (LGPL).

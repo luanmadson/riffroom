@@ -1,27 +1,37 @@
-# Mudanças
+# Changes
 
-## 1.0.0 (22/11/2026)
+## 2.0.0 (23/11/2026): Riffroom
 
-Primeira versão publicada.
+The app gets a new name, **Riffroom** (it was "Sala de Ensaio"), and a new license, **GPL-3.0-or-later** (1.0.0 was MIT).
 
-- Banda separada, com volume e liga/desliga por parte, no equilíbrio do disco.
-- Painel AGORA:
-  - acorde, grau e desenho no braço;
-  - contador de pulsos em 12/8 ou 4/4.
-- Linha do tempo com as partes da música, os acordes, a onda e o trecho repetido.
-- Contagem de 4 pulsos e metrônomo.
-- Gravação de tentativas alinhadas com a banda:
-  - "Acertar o tempo";
-  - correção da diferença de relógio entre a interface e a placa de som.
-- Tentativas:
-  - ouvir no lugar da original ou junto com ela;
-  - favoritas, renomear e apagar com desfazer;
-  - exportar MP3.
-- Entrada e saída:
-  - qualquer interface de áudio; a GT-100 é escolhida sozinha quando está ligada;
-  - a banda toca na caixa do PC ou pela interface.
-- Músicas:
-  - pastas de músicas configuráveis;
-  - músicas novas (por exemplo, as faixas do Demucs) são preparadas ao abrir;
-  - cifra em texto simples (`acordes.txt`) e compassos pelo BPM.
-- Música de demonstração sintetizada e instalador para Windows.
+- **Made for AI assistants**: an MCP server (`app/mcp_server.py`, official MCP SDK 2.3) with 25 tools and a `coach_session` prompt.
+  - With it, Claude Desktop, Claude Code or any MCP client can open songs, loop sections, record, analyze and compare takes, write chord charts and import songs.
+  - The installer registers it in Claude Code and Claude Desktop.
+- **Timing analysis of the takes** (`app/analysis.py`):
+  - finds every strum, to about 1 ms, even on distorted guitar;
+  - compares the strums with the original part or the beat;
+  - reports early or late, consistency, the bars that strayed from the player's own average, and the bars left silent;
+  - a per-bar chart in the app.
+- **Import a song with the local AI** (`install.bat -AI`), all on the user's computer:
+  - Demucs separates the instruments;
+  - beat-this finds the beats and bars (12/8 or 6/8 is decided with the help of the chord changes);
+  - chord suggestions come from chroma, chord templates and Viterbi smoothing;
+  - a count-in pre-roll is added.
+- **Three languages**: English (default), Portuguese and Spanish. This covers the app, the server messages, the installer and the README.
+  - Note names and the count change with the language ("1-and-a", "1-na-na", "1-y-a").
+- **English code and file formats**: `riffroom.json`, the take records and `config.json`.
+  - Version 1 files (`ensaio.json`, take records and the "Sala de Ensaio" configuration) are read and converted.
+  - Takes folders follow the language (`Takes`, `Gravações/Tentativas`, `Grabaciones/Tomas`); an existing folder is kept.
+- The count-in at the start of a song now knows whether the drum track already has one (`count_in_in_drums`).
+- Guitar tuning per song (`tuning`): chords are named by the shape played, and the app shows "half step down".
+
+## 1.0.0 (22/11/2026): Sala de Ensaio
+
+First release. Its features:
+- the separated band;
+- the NOW panel and the timeline;
+- the count-in and the metronome;
+- takes aligned with the band, "Fix the timing", MP3;
+- any audio interface;
+- music folders, the chord chart in plain text;
+- the demo song and the Windows installer.
