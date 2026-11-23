@@ -22,7 +22,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 DATA = os.environ.get('RIFFROOM_DATA') or os.path.join(os.environ.get('LOCALAPPDATA') or os.path.expanduser('~'), 'Riffroom')
