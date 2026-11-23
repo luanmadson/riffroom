@@ -1,6 +1,7 @@
-# Sala de Ensaio: bibliotecas (todas grátis e de código aberto)
+# Riffroom: libraries (all free and open source)
 numpy>=1.26
 scipy>=1.11
 soundfile>=0.12.1
 sounddevice>=0.5
 lameenc>=1.7
+mcp>=2.3

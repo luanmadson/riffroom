@@ -3,12 +3,16 @@ __pycache__/
 .venv/
 venv/
 
-# músicas, faixas e gravações ficam fora do repositório
+# songs, tracks and recordings stay out of the repository
 *.wav
 *.flac
 *.mp3
 *.ogg
 *.aif
 *.aiff
+Takes/
+Exports/
 Gravações/
+Grabaciones/
+.recording/
 .gravando/
