@@ -290,7 +290,7 @@ def _():
             sf.write(os.path.join(nova, nome), np.zeros((SR, 2), np.float32), SR)
         MU.BIBLIOTECAS[:] = [d]
         lst = {x['id']: x for x in MU.listar()}
-        assert lst['Sala de Ensaio/Blues de demonstração']['preparada'], lst
+        assert lst['Demonstração']['preparada'], lst
         assert not lst['Outra banda/Outra música']['preparada'], lst
         PM.preparar(nova, avisar=lambda s: None)
         assert MU.listar()[0]['preparada'] or all(x['preparada'] for x in MU.listar())

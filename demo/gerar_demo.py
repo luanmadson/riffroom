@@ -2,6 +2,7 @@
 """Gera a música de demonstração da Sala de Ensaio: um blues lento em Lá (12/8, 72 pulsos por minuto), com bateria,
 baixo, guitarra base e guitarra solo em faixas separadas. Tudo é sintetizado aqui mesmo, sem gravação de ninguém,
 e no fim a música é preparada (ensaio.json) com os compassos, os acordes e as partes, como uma música de verdade.
+A música fica em <pasta das músicas>\Demonstração.
 
 Uso: python -I -X utf8 gerar_demo.py [pasta das músicas] [--voltas 2]
      (sem a pasta: <Músicas do Windows>\\Sala de Ensaio)
@@ -207,7 +208,7 @@ def gerar(destino, voltas=2, avisar=print):
     faixas = {'bateria': bat * 0.55, 'baixo': bai * 0.9, 'guitarra_base': bas * 0.5, 'guitarra_solo': sol * 0.24}
     pico = np.abs(sum(faixas.values())).max()
     k = 0.85 / pico
-    pasta = os.path.join(destino, ARTISTA, TITULO)
+    pasta = os.path.join(destino, 'Demonstração')
     os.makedirs(pasta, exist_ok=True)
     for nome, x in faixas.items():
         sf.write(os.path.join(pasta, nome + '.wav'), np.clip(x * k, -1, 1).astype(np.float32), SR, subtype='PCM_16')

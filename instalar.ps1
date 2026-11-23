@@ -89,7 +89,7 @@ foreach ($b in $Biblioteca) {
 if (-not $SemDemo) {
   Passo 'Música de demonstração'
   $musicas = & $PyVenv -I -X utf8 -c "import sys; sys.path.insert(0, sys.argv[1]); import musica; print(musica.pasta_musicas_padrao())" (Join-Path $Raiz 'app')
-  $demo = Join-Path $musicas 'Sala de Ensaio\Blues de demonstração'
+  $demo = Join-Path $musicas 'Demonstração'
   if (Test-Path (Join-Path $demo 'ensaio.json')) { Write-Host "  já existe: $demo" }
   else {
     & $PyVenv -I -X utf8 (Join-Path $Raiz 'demo\gerar_demo.py')
