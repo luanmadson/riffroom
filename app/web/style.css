@@ -184,10 +184,22 @@ input[type=range] { accent-color: var(--gold); width: 100%; height: 22px; }
 .empty { color: var(--soft); font-size: 14.5px; line-height: 1.5; padding: 14px 8px; }
 .empty b { color: var(--text); }
 .take {
-  display: grid; grid-template-columns: 40px 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 6px;
+  display: grid; grid-template-columns: 18px 40px 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 6px;
   border-bottom: 1px solid #ffffff0a; border-radius: 8px;
 }
 .take.in-use { background: #ffc43c0f; }
+/* selecting several takes: a box on each row; while selecting, the panel top turns into the selection bar */
+.sel-box, .take .t-sel { width: 17px; height: 17px; margin: 0; accent-color: var(--blue); cursor: pointer; }
+.sel-actions .sel-box { margin-left: 2px; }
+.take .t-sel { opacity: .5; }
+.take:hover .t-sel, .take .t-sel:focus-visible, .selecting .take .t-sel { opacity: 1; }
+.selecting .take { cursor: pointer; }
+.take.selected { background: #5aa2ff1f; box-shadow: inset 3px 0 0 var(--blue); }
+.sel-actions { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.sel-count { font-weight: 700; font-size: 14.5px; white-space: nowrap; margin-right: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sel-actions > button, .sel-actions > input { flex-shrink: 0; }
+.btn-small.danger { color: #ff8b8f; border-color: #6b2a2d; font-weight: 600; }
+.btn-small.danger:hover { background: #3a1d20; }
 .take .t-play { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel2); font-size: 15px; }
 .take .t-play:hover { background: var(--gold); color: #1a1406; }
 .take .t-fav { background: none; border: 0; font-size: 20px; color: var(--faint); }

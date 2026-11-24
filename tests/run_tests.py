@@ -306,6 +306,28 @@ def _():
         assert f2['number'] == 2 and f2['name'] == 'Rhythm 2'
 
 
+@test('delete several takes at once and undo them; a take whose file is open stays')
+def _():
+    with tempfile.TemporaryDirectory() as d:
+        i18n.set_language('en')
+        tt = TK.Takes(d, 'en')
+        fs = [tt.save(np.zeros(SR // 4, np.float32), 'rhythm', 'Rhythm guitar', 0, {}) for _ in range(4)]
+        ids = [f['id'] for f in fs]
+        moved, failed = tt.delete_many([ids[0], ids[2], ids[0], 'no such take'])
+        assert [f['id'] for f in moved] == [ids[0], ids[2]] and not failed, (moved, failed)
+        assert sorted(f['id'] for f in tt.list()) == sorted([ids[1], ids[3]])
+        assert sorted(os.listdir(tt.trash)) == sorted([ids[0] + '.flac', ids[0] + '.json', ids[2] + '.flac', ids[2] + '.json'])
+        back, failed = tt.restore_many([ids[0], ids[2], ids[1]])   # ids[1] is not in the trash: skipped
+        assert sorted(f['id'] for f in back) == sorted([ids[0], ids[2]]) and not failed
+        assert len(tt.list()) == 4 and not os.listdir(tt.trash)
+        if os.name == 'nt':                                       # an open file cannot move on Windows
+            with open(os.path.join(tt.dir, ids[1] + '.flac'), 'rb'):
+                moved, failed = tt.delete_many(ids)
+            assert [f['id'] for f in failed] == [ids[1]] and len(moved) == 3, (moved, failed)
+            assert [f['id'] for f in tt.list()] == [ids[1]], 'the take in use stays whole, audio and record'
+            assert not os.path.exists(os.path.join(tt.trash, ids[1] + '.flac'))
+
+
 # ------------------------------------------------------------------ version 1 files
 @test('legacy: manifest, take record and configuration of version 1 are converted')
 def _():
@@ -491,6 +513,9 @@ def _():
                     'parts': [], 'devices': {}, 'pos': 12.5, 'loop': None, 'loop_on': False, 'loading': False}
             if path == '/api/song':
                 return song
+            if path == '/api/takes':
+                return [{'id': 'take-1', 'name': 'Rhythm 1', 'favorite': True}, {'id': 'take-2', 'name': 'Rhythm 2'},
+                        {'id': 'take-3', 'name': 'Rhythm 3'}]
             if path == '/api/lyrics':
                 return {'timed': True, 'file': 'lyrics.lrc', 'lines': [{'t': 4.0, 'text': 'In the night'}, {'t': None, 'text': ''},
                                                                      {'t': 19.0, 'text': 'Chorus words'}]}
@@ -520,6 +545,12 @@ def _():
             assert st['position']['bar'] == 5 and st['position']['section'] == 'Verse 1', st['position']
             ly = (await c.call_tool('get_lyrics', {})).structured_content
             assert ly['current_line'] == 1 and ly['lines'][2]['section'] == 'Chorus' and ly['lines'][2]['bar'] == 9, ly
+            sent.clear()
+            r = await c.call_tool('delete_take', {'take_ids': ['rhythm 2', 'take-3', 'Rhythm 2']})
+            assert not r.is_error and ('/api/take_delete', {'ids': ['take-2', 'take-3']}) in sent, sent
+            r = await c.call_tool('delete_take', {'take_id': 'Rhythm 9'})
+            assert r.is_error and 'Rhythm 1' in r.content[0].text, r.content
+            assert (await c.call_tool('delete_take', {})).is_error
     asyncio.run(go())
 
 

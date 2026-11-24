@@ -29,7 +29,8 @@ Riffroom was made for practicing guitar at home with a multi-effects pedal conne
   - which bars to practice, and where you rushed or dragged.
 - **Compare**:
   - each part plays the original or one of your takes;
-  - mark favorites, rename, delete (with undo), export MP3.
+  - mark favorites, rename, delete (with undo), export MP3;
+  - delete many at once: tick the boxes (Shift+click ticks a range, "All but ★" keeps the favorites).
 - **Lyrics**, optional: the line being sung lights up and the lyrics scroll by themselves, or just the text, to read.
   - Paste them, or leave an `.lrc` file (lyrics with the time of each line) in the song folder: Riffroom lines it up with the separated voice.
   - Without times, mark them while the song plays, pressing Enter at the start of each line.
@@ -177,7 +178,7 @@ The assistant sees only what the tools return: the structure of the song, the st
 - songs: `list_songs`, `open_song`, `get_song_map`;
 - playback: `play`, `pause`, `set_loop`, `clear_loop`;
 - the band: `set_part`, `set_target`, `set_options`;
-- recording and takes: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take`, `analyze_take`, `compare_takes`, `export_mp3`;
+- recording and takes: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take` (one or several), `analyze_take`, `compare_takes`, `export_mp3`;
 - preparing songs: `set_chords`, `prepare_song`, `import_song`, `get_job`;
 - lyrics: `get_lyrics` (each line with its second, bar and section), `set_lyrics`, `shift_lyrics`;
 - `calibrate_latency` and `get_status`.

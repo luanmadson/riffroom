@@ -39,7 +39,7 @@ get_lyrics gives the lyrics with the time, bar and section of each line (e.g. to
 from the player: write with set_lyrics only lyrics they gave you, never song lyrics from memory.
 The player hears everything on their own speakers; talk to them as a friendly teacher, in their language."""
 
-mcp = MCPServer('riffroom', title='Riffroom', instructions=INSTRUCTIONS, version='2.1.0')
+mcp = MCPServer('riffroom', title='Riffroom', instructions=INSTRUCTIONS, version='2.2.0')
 
 
 # ---------------------------------------------------------------- local API of the app
@@ -446,8 +446,8 @@ def list_takes() -> list[dict[str, Any]]:
     return [_take_summary(f) for f in api.get('/api/takes')]
 
 
-def _take_id(take_id):
-    takes = api.get('/api/takes')
+def _take_id(take_id, takes=None):
+    takes = api.get('/api/takes') if takes is None else takes
     if not takes:
         raise ToolError('There are no takes in this song yet.')
     if not take_id:
@@ -483,11 +483,17 @@ def update_take(take_id: str, name: str | None = None, favorite: bool | None = N
 
 
 @mcp.tool(structured_output=True)
-def delete_take(take_id: str) -> dict[str, Any]:
-    """Moves a take to the trash (it can be restored from the app)."""
+def delete_take(take_id: str | None = None, take_ids: list[str] | None = None) -> dict[str, Any]:
+    """Moves takes to the trash: one (take_id) or several at once (take_ids), by id or name from list_takes. The app
+    shows one Undo for all of them, and they stay in the trash folder of the takes."""
     state()
-    api.post('take_delete', {'id': _take_id(take_id)})
-    return {'takes': list_takes()}
+    names = ([take_id] if take_id else []) + [n for n in (take_ids or []) if n]
+    if not names:
+        raise ToolError('Say which takes to delete: take_id for one, take_ids for several.')
+    takes = api.get('/api/takes')
+    ids = list(dict.fromkeys(_take_id(n, takes) for n in names))
+    api.post('take_delete', {'ids': ids})
+    return {'deleted': ids, 'takes': list_takes()}
 
 
 @mcp.tool(structured_output=True)

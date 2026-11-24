@@ -22,7 +22,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-VERSION = '2.1.0'
+VERSION = '2.2.0'
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 DATA = os.environ.get('RIFFROOM_DATA') or os.path.join(os.environ.get('LOCALAPPDATA') or os.path.expanduser('~'), 'Riffroom')
@@ -683,20 +683,39 @@ class App:
             self.engine.takes[tid]['start'] = int(round((f['start_s'] + f.get('offset_ms', 0.0) / 1000) * SR))
         self.publish('takes', self.list_takes())
 
-    def delete_take(self, tid):
-        for p in self.engine.parts:
-            if p.take == tid:
-                p.source, p.take = 'original', None
-        f = self.takes.delete(tid)
-        self.engine.takes.pop(tid, None)
-        self._store_mix()
-        self.notice(t('msg.take_deleted', name=f.get('name', '')), 'info', action={'kind': 'restore', 'id': tid, 'text': t('act.undo')})
+    def delete_takes(self, ids):
+        """Moves one or more takes to the trash, with a single Undo for all of them."""
+        if not self.takes:
+            raise RuntimeError(t('err.no_song'))
+        ids = [ids] if isinstance(ids, str) else ids
+        gone, failed = self.takes.delete_many([str(i) for i in ids if i])
+        e = self.engine
+        for f in gone:
+            for p in e.parts:
+                if p.take == f['id']:
+                    p.source, p.take = 'original', None
+            e.takes.pop(f['id'], None)
+        if gone:
+            self._store_mix()
+            text = t('msg.take_deleted', name=gone[0].get('name', '')) if len(gone) == 1 else t('msg.takes_deleted', n=len(gone))
+            self.notice(text, 'info', action={'kind': 'restore', 'ids': [f['id'] for f in gone], 'text': t('act.undo')})
+        if failed:
+            self.notice(t('err.take_in_use', names=', '.join(f.get('name', f['id']) for f in failed)), 'error')
         self.publish('takes', self.list_takes())
         self.publish_state()
 
-    def restore_take(self, tid):
-        f = self.takes.restore(tid)
-        self.notice(t('msg.take_restored', name=f.get('name', '')), 'ok')
+    def restore_takes(self, ids):
+        if not self.takes:
+            raise RuntimeError(t('err.no_song'))
+        ids = [ids] if isinstance(ids, str) else ids
+        back, failed = self.takes.restore_many([str(i) for i in ids if i])
+        if back:
+            text = t('msg.take_restored', name=back[0].get('name', '')) if len(back) == 1 else t('msg.takes_restored', n=len(back))
+            self.notice(text, 'ok')
+        if failed:
+            self.notice(t('err.take_in_use', names=', '.join(f.get('name', f['id']) for f in failed)), 'error')
+        elif not back:
+            raise KeyError(t('err.not_in_trash'))
         self.publish('takes', self.list_takes())
 
     def play_take(self, tid):
@@ -1120,8 +1139,8 @@ ROUTES = {
     'stop': lambda a, c: a.stop(),
     'toggle_record': lambda a, c: a.toggle_record(),
     'take': lambda a, c: a.edit_take(c),
-    'take_delete': lambda a, c: a.delete_take(c['id']),
-    'take_restore': lambda a, c: a.restore_take(c['id']),
+    'take_delete': lambda a, c: a.delete_takes(c['ids'] if 'ids' in c else [c['id']]),
+    'take_restore': lambda a, c: a.restore_takes(c['ids'] if 'ids' in c else [c['id']]),
     'take_play': lambda a, c: a.play_take(c['id']),
     'export': lambda a, c: a.export(c.get('kind', 'mix'), c.get('id')),
     'output': lambda a, c: a.set_output(c['mode']),

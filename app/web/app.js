@@ -16,6 +16,7 @@ const S = {
   tick: {}, peakHold: -90, peakHoldAt: 0, levels: [],
   last: {}, recStart: null, drag: null, hover: null,
   dpr: 1, W: 0, H: 0, bg: null, lit: null, openMenu: null, loadingSong: false,
+  selIds: new Set(), selAnchor: null,
 };
 
 // ---------------------------------------------------------------- languages
@@ -102,7 +103,7 @@ function notice(text, kind = 'info', action = null) {
 }
 function doAction(a) {
   if (a.kind === 'listen') api('take_play', { id: a.id });
-  else if (a.kind === 'restore') api('take_restore', { id: a.id });
+  else if (a.kind === 'restore') api('take_restore', a.ids ? { ids: a.ids } : { id: a.id });
   else if (a.kind === 'folder') api('open_folder', { which: a.which });
   else if (a.kind === 'open_song') api('song', { id: a.id });
 }
@@ -733,14 +734,19 @@ function drawParts(rebuild) {
 function drawTakes() {
   const box = $('#list');
   box.innerHTML = '';
-  if (!S.takes.length) { box.innerHTML = `<div class="empty">${t('ui.no_takes_html')}</div>`; return; }
-  for (const f of S.takes) {
+  const have = new Set(S.takes.map(f => f.id));
+  for (const id of [...S.selIds]) if (!have.has(id)) S.selIds.delete(id);
+  if (!have.has(S.selAnchor)) S.selAnchor = null;
+  if (!S.takes.length) { box.innerHTML = `<div class="empty">${t('ui.no_takes_html')}</div>`; updateSelUI(); return; }
+  S.takes.forEach((f, i) => {
     const el = document.createElement('div');
     el.className = 'take' + (f.in_use ? ' in-use' : '');
+    el.dataset.id = f.id;
     const [lv, cls] = levelText(f.peak_db);
     const use = f.in_use === 'take' ? ` · <span class="use">${esc(t('ui.playing_instead'))}</span>`
       : f.in_use === 'both' ? ` · <span class="use">${esc(t('ui.playing_with'))}</span>` : '';
     el.innerHTML = `
+      <input type="checkbox" class="t-sel" title="${esc(t('sel.row_title'))}" aria-label="${esc(f.name)}">
       <button class="t-play" title="${esc(t('ui.listen_title'))}">▶</button>
       <button class="t-fav ${f.favorite ? 'yes' : ''}" title="${esc(f.favorite ? t('ui.favorite') : t('ui.make_favorite'))}">${f.favorite ? '★' : '☆'}</button>
       <div class="t-info">
@@ -783,10 +789,60 @@ function drawTakes() {
       inp.onblur = () => finish(true);
     };
     $('.t-rename', el).onclick = rename;
-    $('.t-name', el).ondblclick = rename;
+    $('.t-name', el).ondblclick = () => { if (!S.selIds.size) rename(); };
     $('.t-delete', el).onclick = () => { closeMenus(); api('take_delete', { id: f.id }); };
+    // selection: the box, or a click on the row while selecting (Ctrl/Shift+click also starts it)
+    el.addEventListener('click', ev => {
+      if (ev.target.closest('button, .menu, input:not(.t-sel)')) return;
+      const onBox = ev.target.classList.contains('t-sel');
+      if (!onBox && !S.selIds.size && !ev.ctrlKey && !ev.shiftKey) return;
+      selectTake(i, onBox ? ev.target.checked : !S.selIds.has(f.id), ev.shiftKey);
+    });
     box.append(el);
+  });
+  updateSelUI();
+}
+
+// ---------------------------------------------------------------- selecting several takes (to delete them at once)
+function selectTake(i, on, range) {
+  const a = range ? S.takes.findIndex(f => f.id === S.selAnchor) : -1;
+  const from = a >= 0 ? Math.min(a, i) : i, to = a >= 0 ? Math.max(a, i) : i;
+  for (let k = from; k <= to; k++) {
+    const id = S.takes[k].id;
+    if (on) S.selIds.add(id); else S.selIds.delete(id);
   }
+  S.selAnchor = S.takes[i].id;
+  updateSelUI();
+}
+function setSelection(ids) { S.selIds = new Set(ids); S.selAnchor = null; updateSelUI(); }
+function updateSelUI() {
+  const n = S.selIds.size, total = S.takes.length;
+  $$('#list .take').forEach(el => {
+    const on = S.selIds.has(el.dataset.id);
+    el.classList.toggle('selected', on);
+    $('.t-sel', el).checked = on;
+  });
+  const all = $('#sel-all');
+  all.checked = n > 0 && n === total;
+  all.indeterminate = n > 0 && n < total;
+  all.title = t(n > 0 && n === total ? 'sel.none_title' : 'sel.all_title');
+  const on = n > 0, panel = $('#panel-takes'), top = $('.panel-top', panel);
+  if (on !== panel.classList.contains('selecting')) top.style.minHeight = on ? top.offsetHeight + 'px' : '';  // the list does not jump
+  panel.classList.toggle('selecting', on);
+  $('#takes-title').hidden = on;
+  $('#takes-actions').hidden = on;
+  $('#sel-actions').hidden = !on;
+  if (!on) return;
+  $('#sel-count').textContent = n === 1 ? t('sel.one') : t('sel.many', { n });
+  $('#sel-delete').textContent = t('sel.delete', { n });
+  const unfav = S.takes.filter(f => !f.favorite).map(f => f.id);
+  $('#sel-unfav').disabled = !unfav.length || (unfav.length === n && unfav.every(id => S.selIds.has(id)));
+}
+async function deleteSelected() {
+  const ids = S.takes.filter(f => S.selIds.has(f.id)).map(f => f.id);
+  if (!ids.length) return;
+  closeMenus();
+  if (await api('take_delete', { ids })) setSelection([]);
 }
 function openMenu(menu) {
   const wasOpen = !menu.hidden;
@@ -1181,6 +1237,10 @@ function bindButtons() {
   $('#tour-skip').onclick = () => tour(TOUR.length);
   $('#btn-export-mix').onclick = () => api('export', { kind: 'mix' });
   $('#btn-folder').onclick = () => api('open_folder', { which: 'takes' });
+  $('#sel-all').onchange = e => setSelection(e.target.checked ? S.takes.map(f => f.id) : []);
+  $('#sel-unfav').onclick = () => setSelection(S.takes.filter(f => !f.favorite).map(f => f.id));
+  $('#sel-delete').onclick = deleteSelected;
+  $('#sel-clear').onclick = () => setSelection([]);
   bindLyrics();
   let lastBack = 0;
   window.addEventListener('focus', () => {  // back from another window: the list of songs may have changed
@@ -1188,18 +1248,23 @@ function bindButtons() {
   });
   document.addEventListener('click', e => {
     if (S.openMenu && !e.target.closest('.menu')) closeMenus();
-    const b = e.target.closest('button'); if (b) b.blur();
+    const b = e.target.closest('button, input[type=checkbox]'); if (b) b.blur();  // keys stay with the app (Space, Delete)
   });
   document.addEventListener('keyup', e => { if (e.key === ' ' && e.target.tagName === 'BUTTON') e.preventDefault(); });
   document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
-    if (e.target.closest('input:not([type=range]), select, textarea')) return;
+    if (e.target.closest('input:not([type=range]):not([type=checkbox]), select, textarea')) return;
     if ($('#dlg-calibrate').open || $('#dlg-help').open || $('#dlg-analysis').open || $('#dlg-lyrics').open) return;
     const k = e.key;
     if (LY.sync) {
       if (k === 'Enter') { e.preventDefault(); if (!e.repeat) syncTap(); return; }
       if (k === 'Backspace') { e.preventDefault(); syncUndo(); return; }
       if (k === 'Escape') { e.preventDefault(); finishSync(); return; }
+    }
+    if (S.selIds.size && (k === 'Escape' || k === 'Delete')) {
+      e.preventDefault();
+      if (k === 'Escape') setSelection([]); else if (!e.repeat) deleteSelected();
+      return;
     }
     if (/^[1-9]$/.test(k) && S.modes && S.modes[+k - 1]) { e.preventDefault(); if (!e.repeat) api('mode', { mode: S.modes[+k - 1] }); return; }
     const actions = {

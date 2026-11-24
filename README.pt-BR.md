@@ -29,7 +29,8 @@ Feito para estudar guitarra em casa, com a pedaleira ligada no computador pela U
   - os compassos para treinar e onde você correu ou arrastou.
 - **Comparar**:
   - cada parte toca a original ou uma tentativa sua;
-  - favoritas, renomear, apagar (com desfazer), exportar MP3.
+  - favoritas, renomear, apagar (com desfazer), exportar MP3;
+  - apagar várias de uma vez: marque as caixinhas (Shift+clique marca um intervalo, "Todas menos as ★" deixa as favoritas).
 - **Letra**, opcional: a linha cantada acende e a letra rola sozinha, ou fica só o texto, para ler.
   - Cole a letra ou deixe um arquivo `.lrc` (letra com o tempo de cada linha) na pasta da música: o Riffroom o alinha pela voz separada.
   - Sem tempos, marque enquanto a música toca, apertando Enter no começo de cada linha.
@@ -177,7 +178,7 @@ O assistente vê só o que as ferramentas devolvem: a estrutura da música, o es
 - músicas: `list_songs`, `open_song`, `get_song_map`;
 - tocar: `play`, `pause`, `set_loop`, `clear_loop`;
 - banda: `set_part`, `set_target`, `set_options`;
-- gravar e tentativas: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take`, `analyze_take`, `compare_takes`, `export_mp3`;
+- gravar e tentativas: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take` (uma ou várias), `analyze_take`, `compare_takes`, `export_mp3`;
 - preparar músicas: `set_chords`, `prepare_song`, `import_song`, `get_job`;
 - letra: `get_lyrics` (cada linha com o segundo, o compasso e a parte da música), `set_lyrics`, `shift_lyrics`;
 - `calibrate_latency` e `get_status`.

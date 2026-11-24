@@ -29,7 +29,8 @@ Hecho para practicar guitarra en casa, con la pedalera conectada a la computador
   - los compases para practicar y dónde te apuraste o te arrastraste.
 - **Comparar**:
   - cada parte toca la original o una toma tuya;
-  - favoritas, cambiar nombre, borrar (con deshacer), exportar MP3.
+  - favoritas, cambiar nombre, borrar (con deshacer), exportar MP3;
+  - borrar varias de una vez: marca las casillas (Mayús+clic marca un intervalo, "Todas menos las ★" deja las favoritas).
 - **Letra**, opcional: la línea que se canta se ilumina y la letra avanza sola, o queda solo el texto, para leer.
   - Pégala o deja un archivo `.lrc` (letra con el tiempo de cada línea) en la carpeta de la canción: Riffroom lo alinea con la voz separada.
   - Sin tiempos, márcalos mientras suena, pulsando Enter al empezar cada línea.

@@ -119,10 +119,17 @@
     </div>
     <div class="panel takes" id="panel-takes">
       <div class="panel-top">
-        <h2 data-i18n="ui.your_takes">Your takes</h2>
-        <div class="top-actions">
+        <h2 id="takes-title" data-i18n="ui.your_takes">Your takes</h2>
+        <div id="takes-actions" class="top-actions">
           <button id="btn-export-mix" class="btn-small" data-i18n="ui.export_mix" data-i18n-title="ui.export_mix_title">Export mix (MP3)</button>
           <button id="btn-folder" class="btn-small" data-i18n="ui.open_folder" data-i18n-title="ui.open_folder_title">Open folder</button>
+        </div>
+        <div id="sel-actions" class="sel-actions" hidden>
+          <input type="checkbox" id="sel-all" class="sel-box">
+          <span id="sel-count" class="sel-count"></span>
+          <button id="sel-unfav" class="btn-small" data-i18n="sel.all_but_fav" data-i18n-title="sel.all_but_fav_title">All but ★</button>
+          <button id="sel-delete" class="btn-small danger" data-i18n-title="sel.delete_title"></button>
+          <button id="sel-clear" class="btn-small" data-i18n-title="sel.clear_title">✕</button>
         </div>
       </div>
       <div id="list" class="list"></div>
@@ -225,6 +232,7 @@
       <kbd>C</kbd><span data-i18n="help.k_c"></span>
       <kbd>M</kbd><span data-i18n="help.k_m"></span>
       <kbd>K</kbd><span data-i18n="help.k_k"></span>
+      <kbd data-i18n="key.delete">Delete</kbd><span data-i18n="help.k_delete"></span>
       <kbd>1 2 3…</kbd><span id="keys-modes" data-i18n="help.k_modes"></span>
       <kbd>?</kbd><span data-i18n="help.k_help"></span>
     </div>

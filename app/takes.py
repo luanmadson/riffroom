@@ -293,20 +293,68 @@ class Takes:
             json.dump(f, fh, ensure_ascii=False, indent=1)
         return f
 
+    @staticmethod
+    def _move(f, src, dst):
+        """Moves the audio and the record of a take between the folders, both or neither. A file open in another
+        program (OneDrive uploading, a player) cannot move on Windows: OSError, and the take stays where it was."""
+        os.makedirs(dst, exist_ok=True)
+        done = []
+        try:
+            for name in (f['file'], os.path.basename(f['_json'])):
+                os.replace(os.path.join(src, name), os.path.join(dst, name))
+                done.append(name)
+        except OSError:
+            for name in reversed(done):
+                try:
+                    os.replace(os.path.join(dst, name), os.path.join(src, name))
+                except OSError:
+                    pass
+            raise
+
+    def delete_many(self, tids):
+        """Moves the takes to the trash (unknown ids are skipped). Returns (records moved, records that failed)."""
+        by_id = {f['id']: f for f in self.list()}
+        moved, failed = [], []
+        for tid in dict.fromkeys(tids):
+            f = by_id.get(tid)
+            if f is None:
+                continue
+            try:
+                self._move(f, self.dir, self.trash)
+                moved.append(f)
+            except OSError:
+                failed.append(f)
+        return moved, failed
+
+    def restore_many(self, tids):
+        """Brings takes back from the trash. Returns (records restored, records that failed)."""
+        want = set(tids)
+        moved, failed = [], []
+        for f in self._records(self.trash):
+            if f['id'] in want and os.path.exists(os.path.join(self.trash, f.get('file', ''))):
+                want.discard(f['id'])
+                try:
+                    self._move(f, self.trash, self.dir)
+                    moved.append(f)
+                except OSError:
+                    failed.append(f)
+        return moved, failed
+
     def delete(self, tid):
-        f = self.find(tid)
-        os.makedirs(self.trash, exist_ok=True)
-        for p in (os.path.join(self.dir, f['file']), f['_json']):
-            shutil.move(p, os.path.join(self.trash, os.path.basename(p)))
-        return f
+        moved, failed = self.delete_many([tid])
+        if failed:
+            raise OSError(f'take in use: {tid}')
+        if not moved:
+            raise KeyError(f'take not found: {tid}')
+        return moved[0]
 
     def restore(self, tid):
-        for f in self._records(self.trash):
-            if f['id'] == tid:
-                for name in (f['file'], os.path.basename(f['_json'])):
-                    shutil.move(os.path.join(self.trash, name), os.path.join(self.dir, name))
-                return f
-        raise KeyError(f'take is not in the trash: {tid}')
+        moved, failed = self.restore_many([tid])
+        if failed:
+            raise OSError(f'take in use: {tid}')
+        if not moved:
+            raise KeyError(f'take is not in the trash: {tid}')
+        return moved[0]
 
     def audio(self, rec):
         x, sr = sf.read(os.path.join(self.dir, rec['file']), dtype='float32', always_2d=True)

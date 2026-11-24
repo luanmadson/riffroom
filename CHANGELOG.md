@@ -1,5 +1,14 @@
 # Changes
 
+## 2.2.0 (24/11/2026)
+
+- **Delete many takes at once**:
+  - each take has a box on the left. Once one is ticked, the top of the panel shows how many are selected, with **All but ★** (everything except the favorites), **Delete** and ✕;
+  - Shift+click ticks a range, and Ctrl+click on a row starts the selection. The Delete key deletes the selected takes, and Esc clears the selection;
+  - they go to the trash folder of the takes, and one **Undo** brings them all back.
+- MCP: `delete_take` also takes a list (`take_ids`), and the app shows one Undo for all of them.
+- If the file of a take is open in another program (OneDrive uploading it, a player), that take stays where it was, audio and record together, and the app says which one could not move.
+
 ## 2.1.0 (24/11/2026)
 
 - **Lyrics** (`app/lyrics.py`), optional, in a panel next to the band (button or key K):
