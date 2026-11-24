@@ -30,7 +30,8 @@ Riffroom was made for practicing guitar at home with a multi-effects pedal conne
 - **Compare**:
   - each part plays the original or one of your takes;
   - mark favorites, rename, delete (with undo), export MP3;
-  - delete many at once: tick the boxes (Shift+click ticks a range, "All but ★" keeps the favorites).
+  - delete many at once: tick the boxes (Shift+click ticks a range, "All but ★" keeps the favorites);
+  - filter the list by part (All, Rhythm, Bass…), with how many takes each one has.
 - **Lyrics**, optional: the line being sung lights up and the lyrics scroll by themselves, or just the text, to read.
   - Paste them, or leave an `.lrc` file (lyrics with the time of each line) in the song folder: Riffroom lines it up with the separated voice.
   - Without times, mark them while the song plays, pressing Enter at the start of each line.

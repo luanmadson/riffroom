@@ -1,5 +1,13 @@
 # Changes
 
+## 2.3.0 (24/11/2026)
+
+- **Filter the takes by part**: with takes of two or more parts, buttons above the list (All, Rhythm, Bass…) show only the takes of one part, with how many each one has and the color of the part in the band.
+  - The choice is kept for each song.
+  - A new take of another part (just recorded, or back with Undo) switches the filter to its part, so it never arrives hidden.
+  - Selecting works on the takes shown: the box at the top, "All but ★", Shift+click and Delete. Changing the filter clears the selection of the takes that are no longer shown.
+  - The band keeps offering every take of each part, with any filter.
+
 ## 2.2.0 (24/11/2026)
 
 - **Delete many takes at once**:

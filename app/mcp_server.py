@@ -39,7 +39,7 @@ get_lyrics gives the lyrics with the time, bar and section of each line (e.g. to
 from the player: write with set_lyrics only lyrics they gave you, never song lyrics from memory.
 The player hears everything on their own speakers; talk to them as a friendly teacher, in their language."""
 
-mcp = MCPServer('riffroom', title='Riffroom', instructions=INSTRUCTIONS, version='2.2.0')
+mcp = MCPServer('riffroom', title='Riffroom', instructions=INSTRUCTIONS, version='2.3.0')
 
 
 # ---------------------------------------------------------------- local API of the app

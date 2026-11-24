@@ -16,7 +16,7 @@ const S = {
   tick: {}, peakHold: -90, peakHoldAt: 0, levels: [],
   last: {}, recStart: null, drag: null, hover: null,
   dpr: 1, W: 0, H: 0, bg: null, lit: null, openMenu: null, loadingSong: false,
-  selIds: new Set(), selAnchor: null,
+  selIds: new Set(), selAnchor: null, takeFilter: 'all',
 };
 
 // ---------------------------------------------------------------- languages
@@ -71,7 +71,7 @@ function connect() {
   es.addEventListener('tick', e => applyTick(JSON.parse(e.data)));
   es.addEventListener('notice', e => { const d = JSON.parse(e.data); notice(d.text, d.kind, d.action); });
   es.addEventListener('song', () => loadSong());
-  es.addEventListener('takes', e => { S.takes = JSON.parse(e.data); afterTakes(); });
+  es.addEventListener('takes', e => onTakes(JSON.parse(e.data)));
   es.addEventListener('calibration', e => showCalibration(JSON.parse(e.data)));
   es.addEventListener('job', e => showJob(JSON.parse(e.data)));
   es.onopen = () => { const d = $('#disconnected'); if (d) d.remove(); };
@@ -154,6 +154,17 @@ async function loadSong() {
 }
 async function loadTakes() {
   try { S.takes = await get('/api/takes'); } catch (e) { S.takes = []; }
+  S.takeFilter = (S.song && localStorage.getItem(filterKey())) || 'all';
+  afterTakes();
+}
+function onTakes(list) {
+  // a take that arrives hidden by the filter (just recorded, or back with Undo): the filter shows its part
+  const before = new Set(S.takes.map(f => f.id));
+  const fresh = list.filter(f => !before.has(f.id));
+  if (S.takeFilter !== 'all' && list.some(f => before.has(f.id)) && fresh.some(f => f.part !== S.takeFilter)) {
+    setTakeFilter(new Set(fresh.map(f => f.part)).size === 1 ? fresh[0].part : 'all');
+  }
+  S.takes = list;
   afterTakes();
 }
 function afterTakes() {
@@ -734,11 +745,13 @@ function drawParts(rebuild) {
 function drawTakes() {
   const box = $('#list');
   box.innerHTML = '';
-  const have = new Set(S.takes.map(f => f.id));
-  for (const id of [...S.selIds]) if (!have.has(id)) S.selIds.delete(id);
+  drawTakeFilter();
+  const shown = visibleTakes();
+  const have = new Set(shown.map(f => f.id));
+  for (const id of [...S.selIds]) if (!have.has(id)) S.selIds.delete(id);  // only what is shown stays selected
   if (!have.has(S.selAnchor)) S.selAnchor = null;
-  if (!S.takes.length) { box.innerHTML = `<div class="empty">${t('ui.no_takes_html')}</div>`; updateSelUI(); return; }
-  S.takes.forEach((f, i) => {
+  if (!shown.length) { box.innerHTML = `<div class="empty">${t('ui.no_takes_html')}</div>`; updateSelUI(); return; }
+  shown.forEach((f, i) => {
     const el = document.createElement('div');
     el.className = 'take' + (f.in_use ? ' in-use' : '');
     el.dataset.id = f.id;
@@ -803,20 +816,50 @@ function drawTakes() {
   updateSelUI();
 }
 
+// ---------------------------------------------------------------- filter by part (All, Rhythm, Bass...)
+const filterKey = () => 'riffroom.takes_filter.' + (S.song ? S.song.id : '');
+function setTakeFilter(part) {
+  S.takeFilter = part;
+  try { if (part === 'all') localStorage.removeItem(filterKey()); else localStorage.setItem(filterKey(), part); } catch (e) { /* no storage */ }
+}
+function visibleTakes() { return S.takeFilter === 'all' ? S.takes : S.takes.filter(f => f.part === S.takeFilter); }
+function takeParts() {  // the parts that have takes, in the order of the band, with how many
+  const n = {}, name = {};
+  for (const f of S.takes) { n[f.part] = (n[f.part] || 0) + 1; name[f.part] = name[f.part] || f.part_name; }
+  const band = S.song ? S.song.parts : [];
+  const ids = [...band.map(p => p.id).filter(id => n[id]), ...Object.keys(n).filter(id => !band.some(p => p.id === id))];
+  return ids.map(id => {
+    const p = band.find(x => x.id === id);
+    return { id, n: n[id], color: p ? p.color : '#9aa5b1', label: S.L['part.short.' + id] || (p ? p.name : name[id] || id) };
+  });
+}
+function drawTakeFilter() {
+  const bar = $('#take-filter'), parts = takeParts();
+  if (parts.length < 2 || !parts.some(p => p.id === S.takeFilter)) S.takeFilter = 'all';
+  bar.hidden = parts.length < 2;
+  if (bar.hidden) { bar.innerHTML = ''; return; }
+  const chip = (id, label, n, color, title) => `<button data-part="${esc(id)}" aria-pressed="${S.takeFilter === id}" title="${esc(title)}">`
+    + `${color ? `<i style="--c:${esc(color)}"></i>` : ''}${esc(label)}<span class="n">${n}</span></button>`;
+  bar.innerHTML = chip('all', t('ui.filter_all'), S.takes.length, '', t('ui.filter_all_title'))
+    + parts.map(p => chip(p.id, p.label, p.n, p.color, t('ui.filter_title', { part: p.label }))).join('');
+  $$('button', bar).forEach(b => b.onclick = () => { setTakeFilter(b.dataset.part); drawTakes(); });
+}
+
 // ---------------------------------------------------------------- selecting several takes (to delete them at once)
 function selectTake(i, on, range) {
-  const a = range ? S.takes.findIndex(f => f.id === S.selAnchor) : -1;
+  const shown = visibleTakes();
+  const a = range ? shown.findIndex(f => f.id === S.selAnchor) : -1;
   const from = a >= 0 ? Math.min(a, i) : i, to = a >= 0 ? Math.max(a, i) : i;
   for (let k = from; k <= to; k++) {
-    const id = S.takes[k].id;
+    const id = shown[k].id;
     if (on) S.selIds.add(id); else S.selIds.delete(id);
   }
-  S.selAnchor = S.takes[i].id;
+  S.selAnchor = shown[i].id;
   updateSelUI();
 }
 function setSelection(ids) { S.selIds = new Set(ids); S.selAnchor = null; updateSelUI(); }
 function updateSelUI() {
-  const n = S.selIds.size, total = S.takes.length;
+  const shown = visibleTakes(), n = S.selIds.size, total = shown.length;
   $$('#list .take').forEach(el => {
     const on = S.selIds.has(el.dataset.id);
     el.classList.toggle('selected', on);
@@ -835,11 +878,11 @@ function updateSelUI() {
   if (!on) return;
   $('#sel-count').textContent = n === 1 ? t('sel.one') : t('sel.many', { n });
   $('#sel-delete').textContent = t('sel.delete', { n });
-  const unfav = S.takes.filter(f => !f.favorite).map(f => f.id);
+  const unfav = shown.filter(f => !f.favorite).map(f => f.id);
   $('#sel-unfav').disabled = !unfav.length || (unfav.length === n && unfav.every(id => S.selIds.has(id)));
 }
 async function deleteSelected() {
-  const ids = S.takes.filter(f => S.selIds.has(f.id)).map(f => f.id);
+  const ids = visibleTakes().filter(f => S.selIds.has(f.id)).map(f => f.id);
   if (!ids.length) return;
   closeMenus();
   if (await api('take_delete', { ids })) setSelection([]);
@@ -1237,8 +1280,8 @@ function bindButtons() {
   $('#tour-skip').onclick = () => tour(TOUR.length);
   $('#btn-export-mix').onclick = () => api('export', { kind: 'mix' });
   $('#btn-folder').onclick = () => api('open_folder', { which: 'takes' });
-  $('#sel-all').onchange = e => setSelection(e.target.checked ? S.takes.map(f => f.id) : []);
-  $('#sel-unfav').onclick = () => setSelection(S.takes.filter(f => !f.favorite).map(f => f.id));
+  $('#sel-all').onchange = e => setSelection(e.target.checked ? visibleTakes().map(f => f.id) : []);
+  $('#sel-unfav').onclick = () => setSelection(visibleTakes().filter(f => !f.favorite).map(f => f.id));
   $('#sel-delete').onclick = deleteSelected;
   $('#sel-clear').onclick = () => setSelection([]);
   bindLyrics();

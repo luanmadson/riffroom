@@ -30,7 +30,8 @@ Feito para estudar guitarra em casa, com a pedaleira ligada no computador pela U
 - **Comparar**:
   - cada parte toca a original ou uma tentativa sua;
   - favoritas, renomear, apagar (com desfazer), exportar MP3;
-  - apagar várias de uma vez: marque as caixinhas (Shift+clique marca um intervalo, "Todas menos as ★" deixa as favoritas).
+  - apagar várias de uma vez: marque as caixinhas (Shift+clique marca um intervalo, "Todas menos as ★" deixa as favoritas);
+  - filtrar a lista por parte (Todas, Base, Baixo…), com quantas tentativas cada uma tem.
 - **Letra**, opcional: a linha cantada acende e a letra rola sozinha, ou fica só o texto, para ler.
   - Cole a letra ou deixe um arquivo `.lrc` (letra com o tempo de cada linha) na pasta da música: o Riffroom o alinha pela voz separada.
   - Sem tempos, marque enquanto a música toca, apertando Enter no começo de cada linha.

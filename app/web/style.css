@@ -198,6 +198,17 @@ input[type=range] { accent-color: var(--gold); width: 100%; height: 22px; }
 .sel-actions { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .sel-count { font-weight: 700; font-size: 14.5px; white-space: nowrap; margin-right: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .sel-actions > button, .sel-actions > input { flex-shrink: 0; }
+/* filter by part, above the list (only with takes of two or more parts) */
+.take-filter { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 8px; }
+.take-filter button {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 11px; font-size: 13px; font-weight: 600; color: var(--soft);
+}
+.take-filter button:hover { color: var(--text); }
+.take-filter button[aria-pressed="true"] { background: #2c3a52; border-color: var(--blue); color: #fff; }
+.take-filter i { width: 9px; height: 9px; border-radius: 3px; background: var(--c); }
+.take-filter .n { color: var(--faint); font-weight: 400; font-variant-numeric: tabular-nums; }
+.take-filter button[aria-pressed="true"] .n { color: #b9c7de; }
 .btn-small.danger { color: #ff8b8f; border-color: #6b2a2d; font-weight: 600; }
 .btn-small.danger:hover { background: #3a1d20; }
 .take .t-play { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--panel2); font-size: 15px; }
