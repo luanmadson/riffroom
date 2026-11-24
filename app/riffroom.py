@@ -22,7 +22,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-VERSION = '2.0.1'
+VERSION = '2.1.0'
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 DATA = os.environ.get('RIFFROOM_DATA') or os.path.join(os.environ.get('LOCALAPPDATA') or os.path.expanduser('~'), 'Riffroom')
@@ -56,6 +56,7 @@ import analysis as AN         # noqa: E402
 import engine as E            # noqa: E402
 import i18n                   # noqa: E402
 import legacy                 # noqa: E402
+import lyrics as LY           # noqa: E402
 import prepare as PR          # noqa: E402
 import song as SG             # noqa: E402
 import takes as TK            # noqa: E402
@@ -117,13 +118,13 @@ def pick_folder(title):
         r.destroy()
 
 
-def pick_file(title):
+def pick_file(title, filetypes=None):
     import tkinter as tk
     from tkinter import filedialog
     r = tk.Tk(); r.withdraw(); r.attributes('-topmost', True)
     try:
-        return filedialog.askopenfilename(parent=r, title=title,
-                                          filetypes=[('Audio', '*.mp3 *.wav *.flac *.ogg *.m4a *.aif *.aiff'), ('*', '*.*')]) or None
+        return filedialog.askopenfilename(parent=r, title=title, filetypes=filetypes or [
+            ('Audio', '*.mp3 *.wav *.flac *.ogg *.m4a *.aif *.aiff'), ('*', '*.*')]) or None
     finally:
         r.destroy()
 
@@ -137,6 +138,12 @@ def level_tip(peak_db, gt100=False):
     if peak_db < -20:
         return t('tip.bit_low')
     return t('tip.good')
+
+
+def secs_txt(v):
+    """+3.60 s (decimal comma in Portuguese and Spanish)."""
+    s = f'{v:+.2f}'
+    return (s.replace('.', ',') if i18n.language() in ('pt', 'es') else s) + ' s'
 
 
 def mmss(s):
@@ -195,6 +202,7 @@ class App:
         self.no_client_since = time.time()
         self.dialog = threading.Lock()
         self.jobs = {}
+        self.lyrics_lock = threading.Lock()
         self.engine.count_in = bool(self.cfg.get('count_in', True))
         self.engine.metronome = bool(self.cfg.get('metronome', False))
         self.engine.open(self.cfg.get('output_mode', 'pc'), input_name=self.cfg.get('input_device'))
@@ -314,6 +322,7 @@ class App:
             'latency_ms': self._latency(), 'calibrated': key in self.cfg.get('latency_ms', {}),
             'last_calibration': self.last_calibration,
             'tour_seen': bool(self.cfg.get('tour_seen')),
+            'lyrics': {'show': bool(self.cfg.get('lyrics_show', True)), 'follow': bool(self.cfg.get('lyrics_follow', True))},
             'jobs': [self._job_view(j) for j in self.jobs.values() if j['status'] == 'running'],
         }
 
@@ -527,6 +536,9 @@ class App:
             self.target = c['target']
         if 'tour_seen' in c:
             self.cfg['tour_seen'] = bool(c['tour_seen'])
+        for k in ('lyrics_show', 'lyrics_follow'):
+            if k in c:
+                self.cfg[k] = bool(c[k])
         if 'language' in c and c['language'] in i18n.LANGUAGES:
             self.cfg['language'] = c['language']
             i18n.set_language(c['language'])
@@ -774,6 +786,163 @@ class App:
         os.makedirs(p, exist_ok=True)
         os.startfile(p)
 
+    # ------------------------------------------------------------ lyrics
+    def _lyrics_dirs(self):
+        """Where the lyrics of the open song are: the folder of its riffroom.json first (where lyrics.lrc goes), then the
+        song folder."""
+        f = self.song.folder
+        man = SG.manifest_path(f)
+        d = os.path.dirname(man) if man else f
+        return [d] if os.path.normcase(d) == os.path.normcase(f) else [d, f]
+
+    def _voice(self):
+        p = next((p for p in self.song.parts if p['id'] == 'vocals'), None)
+        if p is None:
+            return None
+        x = p['data']
+        return (x[:, 0].astype(np.float32) + x[:, 1].astype(np.float32)) / 65536.0
+
+    def _lyrics_view(self, lines, path, meta=None, note=None):
+        return {'song': self.song.id, 'lines': lines, 'timed': LY.timed(lines), 'text': LY.dump(lines, meta),
+                'file': os.path.relpath(path, self.song.folder).replace(os.sep, '/') if path else None,
+                'has_voice': any(p['id'] == 'vocals' for p in self.song.parts), 'note': note}
+
+    def _align_lines(self, lines):
+        """Timed lyrics lined up with the song's voice: (lines, shift in s), or (lines, None) when it was not possible."""
+        v = self._voice()
+        if v is None or not LY.timed(lines):
+            return lines, None
+        sh, q = LY.align(lines, v, self.song.sr)
+        log.info('lyrics: line-up %s s, quality %.2f', sh, q)
+        if sh is None or q < LY.MIN_QUALITY:
+            return lines, None
+        return LY.shift(lines, sh), sh
+
+    def lyrics(self):
+        """Lyrics of the open song. The first time, a lyrics file brought from outside (an .lrc in the song folder) is
+        copied to lyrics.lrc, lined up with the voice when the song has one."""
+        if not self.song:
+            raise RuntimeError(t('err.no_song'))
+        with self.lyrics_lock:
+            return self._lyrics_now()
+
+    def _lyrics_now(self):
+        dirs = self._lyrics_dirs()
+        path, own = LY.find(dirs)
+        if path is None:
+            return self._lyrics_view([], None)
+        d = LY.parse(LY.read_file(path))
+        if own:
+            return self._lyrics_view(d['lines'], path, d['meta'])
+        return self._import_lyrics(d, path, dirs[0])
+
+    def _import_lyrics(self, d, src, folder):
+        lines, sh = self._align_lines(d['lines'])
+        name = os.path.basename(src)
+        meta = dict(d['meta'], re='Riffroom')
+        meta['#'] = f'from {name}' + (f', lined up with the voice ({sh:+.2f} s)' if sh is not None else '')
+        path = LY.write_file(folder, lines, meta)
+        if sh is not None:
+            note = t('msg.lyrics_imported', file=name) + ' ' + t('msg.lyrics_aligned', shift=secs_txt(sh))
+        elif LY.timed(lines) and self._voice() is not None:
+            note = t('msg.lyrics_imported', file=name) + ' ' + t('msg.lyrics_not_aligned')
+        else:
+            note = t('msg.lyrics_imported', file=name)
+        log.info('lyrics: %s -> %s', src, path)
+        self.notice(note, 'ok')
+        return self._lyrics_view(lines, path, meta, note)
+
+    def _own_lyrics(self):
+        """(parsed lyrics.lrc, its folder); imports the file brought from outside first, when that is all there is."""
+        dirs = self._lyrics_dirs()
+        path, own = LY.find(dirs)
+        if path is not None and not own:
+            self._lyrics_now()
+            path, own = LY.find(dirs)
+        if path is None:
+            raise RuntimeError(t('err.lyrics_none'))
+        return LY.parse(LY.read_file(path)), dirs[0]
+
+    def save_lyrics(self, text, align=False):
+        """Writes the lyrics typed or pasted on the screen (LRC or plain text). align: line the times up with the voice."""
+        if not self.song:
+            raise RuntimeError(t('err.no_song'))
+        with self.lyrics_lock:
+            d = LY.parse(text)
+            lines, sh = self._align_lines(d['lines']) if align else (d['lines'], None)
+            path = LY.write_file(self._lyrics_dirs()[0], lines, d['meta'])
+            note = t('msg.lyrics_saved', n=sum(1 for ln in lines if ln['text']))
+            if sh is not None:
+                note += ' ' + t('msg.lyrics_aligned', shift=secs_txt(sh))
+            elif align and LY.timed(lines) and self._voice() is not None:
+                note += ' ' + t('msg.lyrics_not_aligned')
+            self.notice(note, 'ok')
+            return self._lyrics_view(lines, path, d['meta'], note)
+
+    def shift_lyrics(self, seconds):
+        """Moves every line by `seconds` (negative: earlier)."""
+        if not self.song:
+            raise RuntimeError(t('err.no_song'))
+        with self.lyrics_lock:
+            d, folder = self._own_lyrics()
+            if not LY.timed(d['lines']):
+                raise RuntimeError(t('err.lyrics_untimed'))
+            lines = LY.shift(d['lines'], max(-60.0, min(60.0, float(seconds))))
+            return self._lyrics_view(lines, LY.write_file(folder, lines, d['meta']), d['meta'])
+
+    def align_lyrics(self):
+        if not self.song:
+            raise RuntimeError(t('err.no_song'))
+        with self.lyrics_lock:
+            d, folder = self._own_lyrics()
+            if not LY.timed(d['lines']):
+                raise RuntimeError(t('err.lyrics_untimed'))
+            if self._voice() is None:
+                raise RuntimeError(t('err.lyrics_no_voice'))
+            lines, sh = self._align_lines(d['lines'])
+            if sh is None:
+                note = t('msg.lyrics_not_aligned')
+                self.notice(note, 'error')
+                return self._lyrics_view(d['lines'], os.path.join(folder, LY.FILE), d['meta'], note)
+            note = t('msg.lyrics_aligned', shift=secs_txt(sh))
+            self.notice(note, 'ok')
+            return self._lyrics_view(lines, LY.write_file(folder, lines, d['meta']), d['meta'], note)
+
+    def set_lyrics_times(self, times):
+        """Times marked by the player while the song played: [[line index, seconds], ...]."""
+        if not self.song:
+            raise RuntimeError(t('err.no_song'))
+        with self.lyrics_lock:
+            d, folder = self._own_lyrics()
+            lines = d['lines']
+            n = 0
+            for i, v in times:
+                i = int(i)
+                if 0 <= i < len(lines) and lines[i]['text']:
+                    lines[i] = dict(lines[i], t=round(max(0.0, float(v)), 2))
+                    n += 1
+            note = t('msg.lyrics_times', n=n)
+            self.notice(note, 'ok')
+            return self._lyrics_view(lines, LY.write_file(folder, lines, d['meta']), d['meta'], note)
+
+    def open_lyrics_file(self):
+        """Window to choose a lyrics file (.lrc or .txt); it becomes the lyrics of the open song (lined up with the voice)."""
+        if not self.song:
+            raise RuntimeError(t('err.no_song'))
+        if not self.dialog.acquire(blocking=False):
+            raise RuntimeError(t('err.dialog_open'))
+        try:
+            path = pick_file(t('dlg.pick_lyrics'), [(t('dlg.lyrics_files'), '*.lrc *.txt'), ('*', '*.*')])
+        finally:
+            self.dialog.release()
+        if not path:
+            return {'cancelled': True}
+        with self.lyrics_lock:
+            d = LY.parse(LY.read_file(path))
+            if not any(ln['text'] for ln in d['lines']):
+                raise ValueError(t('err.lyrics_empty_file', file=os.path.basename(path)))
+            return self._import_lyrics(d, path, self._lyrics_dirs()[0])
+
     # ------------------------------------------------------------ chords and preparing songs (screen and AI)
     def set_chords(self, c):
         """Writes the chord chart of a song (chords.txt) and prepares it again. Optional: tempo, meter, tonic, tuning."""
@@ -970,6 +1139,11 @@ RESULT_ROUTES = {
     'analyze': lambda a, c: a.analyze_take(c['id']),
     'import': lambda a, c: {'job': a.import_song(c)},
     'prepare': lambda a, c: {'song_id': a.prepare_folder(c)},
+    'lyrics_save': lambda a, c: a.save_lyrics(c.get('text') or '', bool(c.get('align'))),
+    'lyrics_shift': lambda a, c: a.shift_lyrics(float(c['seconds'])),
+    'lyrics_align': lambda a, c: a.align_lyrics(),
+    'lyrics_times': lambda a, c: a.set_lyrics_times(c.get('times') or []),
+    'lyrics_open': lambda a, c: a.open_lyrics_file(),
 }
 
 
@@ -1063,6 +1237,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(APP.job(qs.get('id', [''])[0]))
             if p == '/api/analysis':
                 return self._json(APP.analyze_take(qs.get('id', [''])[0]))
+            if p == '/api/lyrics':
+                return self._json(APP.lyrics())
             if p == '/api/chord.svg':
                 name = qs.get('name', [''])[0]
                 if not APP.song:

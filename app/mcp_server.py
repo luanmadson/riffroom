@@ -35,9 +35,11 @@ Typical session: list_songs -> open_song -> get_song_map (sections, bars, chords
 will play) -> set_loop on a section -> record_take (one pass of the loop; the player plays along) -> analyze_take ->
 explain in plain words where they rushed or dragged and suggest what to practice. Bars are numbered from 1.
 Before the first recording of a session, check get_status: if 'calibrated' is false, suggest calibrate_latency.
+get_lyrics gives the lyrics with the time, bar and section of each line (e.g. to loop the chorus by its words). Lyrics come
+from the player: write with set_lyrics only lyrics they gave you, never song lyrics from memory.
 The player hears everything on their own speakers; talk to them as a friendly teacher, in their language."""
 
-mcp = MCPServer('riffroom', title='Riffroom', instructions=INSTRUCTIONS, version='2.0.0')
+mcp = MCPServer('riffroom', title='Riffroom', instructions=INSTRUCTIONS, version='2.1.0')
 
 
 # ---------------------------------------------------------------- local API of the app
@@ -537,6 +539,44 @@ def set_chords(chart_text: str, song: str | None = None, bpm: float | None = Non
     api.post('chords', {'song': sid, 'chart': chart_text, 'bpm': bpm, 'time_signature': time_signature,
                         'first_bar': first_bar_s, 'tonic': tonic, 'tuning': tuning}, timeout=300)
     return get_song_map()
+
+
+def _lyrics_out(ly):
+    st = state()
+    m = song_map_raw()
+    lines, cur = [], None
+    for i, ln in enumerate(ly.get('lines') or []):
+        d = {'n': i + 1, 'text': ln['text']}
+        if ln.get('t') is not None:
+            d.update(where(m, ln['t']))
+            if ln['text'] and ln['t'] <= st['pos'] + 0.05:
+                cur = i + 1
+        lines.append(d)
+    return {'timed': ly.get('timed'), 'file': ly.get('file'), 'current_line': cur, 'lines': lines,
+            'note': ly.get('note')}
+
+
+@mcp.tool(structured_output=True)
+def get_lyrics() -> dict[str, Any]:
+    """Lyrics of the open song, line by line (blank text: a break between verses). When the lyrics are timed, each line
+    has the second, bar and section where it is sung; 'current_line' is the line at the player's position. Empty lines
+    list when the song has no lyrics yet (the player can paste them in Riffroom, or give them to you for set_lyrics)."""
+    return _lyrics_out(api.get('/api/lyrics'))
+
+
+@mcp.tool(structured_output=True)
+def set_lyrics(text: str, align_to_voice: bool = True) -> dict[str, Any]:
+    """Writes the lyrics of the open song (lyrics.lrc in the song folder): plain text, one sung line per line and a blank
+    line between verses, or LRC with the time of each line ("[01:04.17]text"). Use only lyrics the player gave you.
+    align_to_voice: for LRC timed to another recording, shift the times to line up with the song's separated voice."""
+    return _lyrics_out(api.post('lyrics_save', {'text': text, 'align': align_to_voice}))
+
+
+@mcp.tool(structured_output=True)
+def shift_lyrics(seconds: float) -> dict[str, Any]:
+    """Moves every timed line of the lyrics by `seconds` (negative: the lines show earlier), when the player says the
+    lyrics run ahead of or behind the song."""
+    return _lyrics_out(api.post('lyrics_shift', {'seconds': seconds}))
 
 
 @mcp.tool(structured_output=True)

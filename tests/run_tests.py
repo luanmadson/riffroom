@@ -23,6 +23,7 @@ import chords as CH        # noqa: E402
 import engine as E         # noqa: E402
 import i18n                # noqa: E402
 import legacy              # noqa: E402
+import lyrics as LY        # noqa: E402
 import prepare as PR       # noqa: E402
 import song as SG          # noqa: E402
 import takes as TK         # noqa: E402
@@ -418,6 +419,49 @@ def _():
         assert r['reference'] == 'original' and abs(r['original']['median_ms']) < 2, r.get('original')
 
 
+# ------------------------------------------------------------------ lyrics
+@test('lyrics: LRC and plain text, repeated chorus, offset, round trip, shift')
+def _():
+    d = LY.parse('\ufeff[ti:Song]\n[ar:Band]\n[offset:+500]\n[00:12.50]First line\n[00:20.00][01:10.00]Chorus <00:21.00>line\n'
+                 '\n\n\nAfter a break\n[00:30.5]Third\n[02:00.00]\n')
+    assert d['meta'] == {'ti': 'Song', 'ar': 'Band'}, d['meta']
+    L = d['lines']
+    assert [ln['t'] for ln in L] == [12.0, 19.5, None, None, 30.0, 69.5, 119.5], L
+    assert L[1]['text'] == 'Chorus line' and L[5]['text'] == 'Chorus line' and L[2]['text'] == '' and L[6]['text'] == ''
+    assert LY.parse(LY.dump(L, d['meta'])) == {'lines': L, 'meta': d['meta']}
+    assert LY.fmt(65.456) == '[01:05.46]' and LY.timed(L) and not LY.timed(LY.parse('a\nb')['lines'])
+    S = LY.shift(L, -12.5)
+    assert S[0]['t'] == 0.0 and S[1]['t'] == 7.0 and S[3]['t'] is None
+    p = LY.parse('Line one\n\nLine two\n')['lines']
+    assert p == [{'t': None, 'text': 'Line one'}, {'t': None, 'text': ''}, {'t': None, 'text': 'Line two'}], p
+    with tempfile.TemporaryDirectory() as d1:
+        sub = os.path.join(d1, 'Dados')
+        os.makedirs(sub)
+        assert LY.find([sub, d1]) == (None, False)
+        open(os.path.join(d1, 'from the web.lrc'), 'w', encoding='cp1252').write('[00:01.00]Ol\xe1\n')
+        path, own = LY.find([sub, d1])
+        assert not own and path.endswith('from the web.lrc') and LY.parse(LY.read_file(path))['lines'][0]['text'] == 'Ol\xe1'
+        LY.write_file(sub, L, d['meta'])
+        assert LY.find([sub, d1]) == (os.path.join(sub, LY.FILE), True)
+
+
+@test('lyrics: lined up with the voice (lines 3.4 s off are found within 0.05 s)')
+def _():
+    rng = np.random.default_rng(7)
+    starts = np.cumsum(rng.uniform(2.0, 4.5, 30)) + 8.0          # where the voice comes in, 2-4.5 s apart
+    n = int((starts[-1] + 6) * SR)
+    voice = (rng.standard_normal(n) * 0.0005).astype(np.float32)   # leak of the band, ~60 dB down
+    for a in starts:
+        i0, i1 = int(a * SR), int((a + rng.uniform(1.0, 1.8)) * SR)
+        voice[i0:i1] += (0.3 * np.sin(2 * np.pi * 220 * np.arange(i1 - i0) / SR)).astype(np.float32)
+    lines = [{'t': float(a - 3.4 + rng.normal(0, 0.05)), 'text': f'line {k}'} for k, a in enumerate(starts)]
+    sh, q = LY.align(lines, voice, SR)
+    assert sh is not None and abs(sh - 3.4) < 0.05 and q > 0.8, (sh, q)
+    sh2, q2 = LY.align(LY.shift(lines, 9.0), voice, SR)
+    assert abs(sh2 - (3.4 - 9.0)) < 0.05, sh2
+    assert LY.align(lines[:2], voice, SR) == (None, 0.0)
+
+
 # ------------------------------------------------------------------ MCP server (in memory, with a fake app)
 @test('MCP: tools list, song search, sections and bars turned into seconds')
 def _():
@@ -447,6 +491,9 @@ def _():
                     'parts': [], 'devices': {}, 'pos': 12.5, 'loop': None, 'loop_on': False, 'loading': False}
             if path == '/api/song':
                 return song
+            if path == '/api/lyrics':
+                return {'timed': True, 'file': 'lyrics.lrc', 'lines': [{'t': 4.0, 'text': 'In the night'}, {'t': None, 'text': ''},
+                                                                     {'t': 19.0, 'text': 'Chorus words'}]}
             return {}
 
     MS.api = Fake()
@@ -471,6 +518,8 @@ def _():
             assert r.is_error and '1 to 16' in r.content[0].text, r.content
             st = (await c.call_tool('get_status', {})).structured_content
             assert st['position']['bar'] == 5 and st['position']['section'] == 'Verse 1', st['position']
+            ly = (await c.call_tool('get_lyrics', {})).structured_content
+            assert ly['current_line'] == 1 and ly['lines'][2]['section'] == 'Chorus' and ly['lines'][2]['bar'] == 9, ly
     asyncio.run(go())
 
 

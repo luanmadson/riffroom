@@ -85,6 +85,38 @@
       <div id="parts" class="parts"></div>
       <div class="panel-foot" data-i18n="ui.band_foot">With everything at 0 dB the band sounds like the record. Double-click a volume to reset it to 0.</div>
     </div>
+    <div class="panel lyrics" id="panel-lyrics" hidden>
+      <div class="panel-top">
+        <h2 data-i18n="ly.edit_title">Lyrics</h2>
+        <div class="top-actions">
+          <button id="ly-follow" class="toggle small" aria-pressed="true" data-i18n-title="ly.follow_title"><span data-i18n="ly.follow">Follow</span></button>
+          <div class="menu-wrap">
+            <button id="ly-more" class="btn-small" data-i18n-title="ly.more_title">⋯</button>
+            <div id="menu-lyrics" class="menu" hidden>
+              <button data-ly="edit" data-i18n="ly.edit">Edit or paste the lyrics…</button>
+              <button data-ly="open" data-i18n="ly.open">Open a lyrics file (.lrc or .txt)…</button>
+              <button data-ly="sync" data-i18n="ly.sync">Mark the times while it plays</button>
+              <button data-ly="align" data-i18n="ly.align">Line up with the voice of the song</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ly-sync" class="ly-sync" hidden>
+        <div data-i18n-html="ly.sync_tip"></div>
+        <div class="ly-sync-buttons">
+          <button id="ly-sync-now" class="button primary" data-i18n="ly.sync_now">Now</button>
+          <button id="ly-sync-undo" class="button" data-i18n="ly.sync_undo">Undo</button>
+          <button id="ly-sync-done" class="button" data-i18n="ly.sync_done">Finish</button>
+          <span id="ly-sync-count" class="ly-sync-count"></span>
+        </div>
+      </div>
+      <div id="ly-list" class="ly-list"></div>
+      <div id="ly-foot" class="panel-foot ly-foot" hidden>
+        <span data-i18n="ly.timing">Lyrics early or late?</span>
+        <button id="ly-earlier" class="btn-small" data-i18n-title="ly.earlier_title">−0,1 s</button>
+        <button id="ly-later" class="btn-small" data-i18n-title="ly.later_title">+0,1 s</button>
+      </div>
+    </div>
     <div class="panel takes" id="panel-takes">
       <div class="panel-top">
         <h2 data-i18n="ui.your_takes">Your takes</h2>
@@ -110,6 +142,7 @@
     <button id="b-loop" class="toggle" aria-pressed="false" data-i18n-title="ui.loop_title">🔁 <span data-i18n="ui.loop">Loop</span><small>L</small></button>
     <button id="b-countin" class="toggle" aria-pressed="true" data-i18n-title="ui.countin_title"><span data-i18n="ui.countin">Count-in</span><small>C</small></button>
     <button id="b-metro" class="toggle" aria-pressed="false" data-i18n-title="ui.metronome_title"><span data-i18n="ui.metronome">Metronome</span><small>M</small></button>
+    <button id="b-lyrics" class="toggle" aria-pressed="false" data-i18n-title="ui.lyrics_title"><span data-i18n="ui.lyrics">Lyrics</span><small>K</small></button>
     <label class="master" data-i18n-title="ui.master_title"><span data-i18n="ui.volume">Volume</span><input id="master" type="range" min="-30" max="6" step="0.5" value="0"></label>
   </div>
   <div class="tr-right">
@@ -148,6 +181,17 @@
   </div>
 </dialog>
 
+<dialog id="dlg-lyrics" class="wide">
+  <h3 data-i18n="ly.edit_title">Lyrics</h3>
+  <p class="dlg-tip" data-i18n-html="ly.edit_tip"></p>
+  <textarea id="ly-text" spellcheck="false"></textarea>
+  <label id="ly-align-wrap" class="ly-check"><input id="ly-align" type="checkbox"> <span data-i18n="ly.align_check">Line the times up with the voice of the song</span></label>
+  <div class="dlg-buttons">
+    <button id="ly-cancel" class="button" data-i18n="ui.cancel">Cancel</button>
+    <button id="ly-save" class="button primary" data-i18n="ui.save">Save</button>
+  </div>
+</dialog>
+
 <dialog id="dlg-help">
   <h3 data-i18n="help.title">What each thing is</h3>
   <div class="help-list">
@@ -167,6 +211,8 @@
     <p data-i18n-html="help.devices"></p>
     <h4 data-i18n="help.songs_h">Songs</h4>
     <p data-i18n-html="help.songs"></p>
+    <h4 data-i18n="help.lyrics_h">Lyrics</h4>
+    <p data-i18n-html="help.lyrics"></p>
     <h4 data-i18n="help.ai_h">With an AI assistant</h4>
     <p data-i18n-html="help.ai"></p>
     <h4 data-i18n="help.keys_h">Keys</h4>
@@ -178,6 +224,7 @@
       <kbd>L</kbd><span data-i18n="help.k_l"></span>
       <kbd>C</kbd><span data-i18n="help.k_c"></span>
       <kbd>M</kbd><span data-i18n="help.k_m"></span>
+      <kbd>K</kbd><span data-i18n="help.k_k"></span>
       <kbd>1 2 3…</kbd><span id="keys-modes" data-i18n="help.k_modes"></span>
       <kbd>?</kbd><span data-i18n="help.k_help"></span>
     </div>

@@ -1,5 +1,14 @@
 # Changes
 
+## 2.1.0 (24/11/2026)
+
+- **Lyrics** (`app/lyrics.py`), optional, in a panel next to the band (button or key K):
+  - **Follow**: the line being sung lights up a moment early and the lyrics scroll by themselves. Off: just the text, to read. Click a line to play from it.
+  - Paste them (plain text or LRC), or leave an `.lrc` in the song folder: the first time, Riffroom lines it up with the separated voice and keeps its copy as `lyrics.lrc`. The original file is not changed.
+  - Without times: mark them while the song plays (Enter at the start of each line). The −0.1 s and +0.1 s buttons fine-tune.
+  - MCP: `get_lyrics` (each line with its second, bar and section), `set_lyrics` and `shift_lyrics`.
+- Clipping tip with the BOSS GT-100: it now says "the patch level on the GT-100" instead of "the PATCH LEVEL". The PATCH LEVEL only reaches the USB recording when the USB block is the last of the effects chain.
+
 ## 2.0.1 (23/11/2026)
 
 - Installer: it stopped while creating the shortcuts (two PowerShell variables differed only by case). Fixed.

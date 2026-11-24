@@ -330,6 +330,38 @@ dialog ol { padding-left: 22px; }
 .an-table-wrap td, .an-table-wrap th { padding: 2px 12px 2px 0; text-align: right; }
 .an-table-wrap > div { max-height: 200px; overflow: auto; }
 
+/* ---------------------------------------------------------------- lyrics */
+.panels.with-lyrics { grid-template-columns: minmax(0, 1.2fr) minmax(0, .85fr) minmax(0, .85fr); }
+.lyrics .top-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.toggle.small { height: 30px; padding: 0 10px; font-size: 13px; border-radius: 8px; }
+.ly-list { position: relative; overflow: auto; flex: 1; min-height: 0; padding: 0 10px 12px; }
+.ly-line { font-size: 18px; line-height: 1.4; padding: 3px 8px; margin: 1px 0; border-radius: 8px; color: var(--text); cursor: pointer; user-select: text; }
+.ly-line.untimed { cursor: text; }
+.ly-line:hover { background: #ffffff08; }
+.ly-gap { height: 12px; }
+.ly-hint, .ly-empty { color: var(--soft); font-size: 14px; line-height: 1.5; padding: 2px 8px 8px; }
+.ly-empty p { margin: 4px 0 10px; }
+.ly-empty-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.following .ly-line { color: var(--soft); transition: color .25s; }
+.following .ly-line.past { color: var(--faint); }
+.following .ly-line.next { color: var(--text); }
+.following .ly-line.now { color: #fff; font-weight: 600; background: linear-gradient(90deg, #ffc43c40 var(--p, 0%), #ffffff10 var(--p, 0%)); }
+.ly-line.cursor { outline: 2px solid var(--gold); outline-offset: -2px; background: #ffc43c1f; color: #fff; }
+.ly-line.marked { color: var(--soft); }
+.ly-line.marked::before { content: "✓ "; color: var(--green); }
+.ly-sync { margin: 0 12px 8px; padding: 8px 10px; border: 1px solid #b88a1c; border-radius: 10px; background: #2a2210; font-size: 13.5px; line-height: 1.45; color: #f3e2b5; }
+.ly-sync-buttons { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.ly-sync .button { padding: 6px 14px; font-size: 14px; }
+.ly-sync-count { color: var(--soft); margin-left: auto; font-variant-numeric: tabular-nums; }
+.ly-foot { display: flex; align-items: center; gap: 8px; }
+.ly-foot span { margin-right: auto; }
+#ly-text {
+  display: block; width: 100%; height: 46vh; resize: vertical; font: 14px/1.45 Consolas, "Cascadia Mono", monospace; color: var(--text);
+  background: #0d0f13; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; user-select: text;
+}
+.ly-check { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; font-size: 14px; color: var(--soft); }
+dialog .dlg-tip { margin-top: 0; }
+
 @media (max-height: 820px) {
   .middle { grid-template-rows: 130px minmax(0, 1fr); }
   .diagram { width: 88px; height: 140px; }

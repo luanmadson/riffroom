@@ -144,6 +144,7 @@ async function loadSong() {
     buildCounter();
     $('#time-total').textContent = fmt(m.duration);
     await loadTakes();
+    await loadLyrics();
     resize();
     drawParts(true);
     if (S.state && !S.state.tour_seen && !localStorage.getItem('riffroom.tour')) setTimeout(() => tour(0), 600);
@@ -284,6 +285,12 @@ function applyState(e) {
   $('#b-loop').title = e.loop ? t('ui.loop_range', { a: fmt(e.loop[0]), b: fmt(e.loop[1]) }) : t('ui.loop_mark_first');
   $('#b-countin').setAttribute('aria-pressed', String(!!e.count_in));
   $('#b-metro').setAttribute('aria-pressed', String(!!e.metronome));
+  const ly = e.lyrics || { show: false, follow: true };
+  $('#panel-lyrics').hidden = !ly.show;
+  $('.panels').classList.toggle('with-lyrics', !!ly.show);
+  $('#b-lyrics').setAttribute('aria-pressed', String(!!ly.show));
+  $('#ly-follow').setAttribute('aria-pressed', String(!!ly.follow));
+  if (!ly.show && LY.sync) finishSync(true);
   const mv = $('#master');
   if (document.activeElement !== mv) mv.value = e.master_db;
   drawParts(false);
@@ -934,11 +941,198 @@ function tour(i) {
   d.style.position = 'fixed'; d.style.margin = '0'; d.style.left = '50%'; d.style.top = '38%'; d.style.transform = 'translate(-50%, -50%)'; d.style.zIndex = 80;
 }
 
+// ---------------------------------------------------------------- lyrics
+// The server keeps them in lyrics.lrc (LRC: the time of each line). Follow on: the line being sung lights up a moment
+// early and the list scrolls by itself; off: just the text, to read. "Mark the times": Enter at the start of each line.
+const LY = { lines: [], timed: false, hasVoice: false, els: [], order: [], times: [], cur: -2, next: -2, follow: null,
+  hold: 0, sync: null, text: '' };
+const LY_EARLY = 0.25;   // s: the line lights up this much before it is sung, to read it in time
+const LY_HOLD = 8;       // s: a line stays lit at most this long (a solo after the last line of a verse: none lit)
+
+async function loadLyrics() {
+  let d = { lines: [], timed: false };
+  try { d = await get('/api/lyrics'); } catch (e) { console.warn(e); }
+  showLyrics(d);
+}
+function showLyrics(d) {
+  if (!d || d.cancelled) return;
+  if (LY.sync) finishSync(true);
+  LY.lines = d.lines || []; LY.timed = !!d.timed; LY.hasVoice = !!d.has_voice; LY.text = d.text || '';
+  LY.order = LY.lines.map((l, i) => i).filter(i => LY.lines[i].t != null).sort((a, b) => LY.lines[a].t - LY.lines[b].t);
+  LY.times = LY.order.map(i => LY.lines[i].t);
+  LY.cur = LY.next = -2; LY.follow = null; LY.els = [];
+  const box = $('#ly-list');
+  box.innerHTML = '';
+  const has = LY.lines.some(l => l.text);
+  if (!has) {
+    box.innerHTML = `<div class="ly-empty"><p>${esc(t('ly.empty'))}</p><div class="ly-empty-buttons">
+      <button class="button" data-ly="edit">${esc(t('ly.paste'))}</button>
+      <button class="button" data-ly="open">${esc(t('ly.open_short'))}</button></div></div>`;
+  } else {
+    if (!LY.timed) box.insertAdjacentHTML('beforeend', `<div class="ly-hint">${esc(t('ly.untimed'))}</div>`);
+    for (const [i, l] of LY.lines.entries()) {
+      const el = document.createElement('div');
+      el.className = l.text ? 'ly-line' + (l.t == null ? ' untimed' : '') : 'ly-gap';
+      if (l.text) el.textContent = l.text;
+      if (l.text && l.t != null) el.title = fmt(l.t);
+      el.dataset.i = i;
+      box.append(el);
+      LY.els.push(el);
+    }
+  }
+  $('#ly-foot').hidden = !LY.timed;
+  $('#menu-lyrics [data-ly="sync"]').disabled = !has;
+  $('#menu-lyrics [data-ly="align"]').disabled = !(LY.timed && LY.hasVoice);
+  box.scrollTop = 0;
+}
+function lyScrollTo(el) {
+  const box = $('#ly-list');
+  if (el) box.scrollTo({ top: Math.max(0, el.offsetTop - box.clientHeight * 0.3), behavior: 'smooth' });
+}
+function updateLyrics(x) {
+  const panel = $('#panel-lyrics');
+  if (panel.hidden || !LY.els.length || LY.sync) return;
+  const follow = !!(S.state && S.state.lyrics && S.state.lyrics.follow) && LY.timed;
+  if (follow !== LY.follow) {
+    LY.follow = follow; LY.cur = LY.next = -2;
+    panel.classList.toggle('following', follow);
+    if (!follow) LY.els.forEach(el => el.classList.remove('now', 'next', 'past'));
+  }
+  if (!follow) return;
+  const k = lastAtOrBefore(LY.times, x + LY_EARLY);
+  let cur = k >= 0 ? LY.order[k] : -1;
+  if (cur >= 0 && (!LY.lines[cur].text || x + LY_EARLY > LY.lines[cur].t + LY_HOLD)) cur = -1;  // the band plays alone
+  let nk = k + 1;
+  while (nk < LY.order.length && !LY.lines[LY.order[nk]].text) nk++;
+  const nxt = nk < LY.order.length ? LY.order[nk] : -1;
+  if (cur !== LY.cur || nxt !== LY.next) {
+    const pivot = cur >= 0 ? cur : (nxt >= 0 ? nxt : LY.lines.length);
+    LY.els.forEach((el, i) => {
+      el.classList.toggle('now', i === cur);
+      el.classList.toggle('next', i === nxt);
+      el.classList.toggle('past', i < pivot && i !== cur);
+    });
+    LY.cur = cur; LY.next = nxt;
+    if (performance.now() > LY.hold) lyScrollTo(LY.els[cur >= 0 ? cur : nxt]);
+  }
+  if (cur >= 0) {   // sweep across the line being sung
+    const kk = LY.order.indexOf(cur), t0 = LY.lines[cur].t;
+    const t1 = kk + 1 < LY.times.length ? Math.min(LY.times[kk + 1], t0 + LY_HOLD) : t0 + 5;
+    const p = Math.max(0, Math.min(1, (x + LY_EARLY - t0) / Math.max(0.5, t1 - t0)));
+    LY.els[cur].style.setProperty('--p', (p * 100).toFixed(1) + '%');
+  }
+}
+function lyNextLine(i) { while (i < LY.lines.length && !LY.lines[i].text) i++; return i < LY.lines.length ? i : -1; }
+function startSync(from = 0) {
+  const first = lyNextLine(from);
+  if (first < 0) return;
+  closeMenus();
+  LY.sync = { i: first, marks: {}, stack: [] };
+  $('#panel-lyrics').classList.add('syncing');
+  $('#panel-lyrics').classList.remove('following');
+  LY.els.forEach(el => el.classList.remove('now', 'next', 'past'));
+  $('#ly-sync').hidden = false;
+  markSync();
+  if (S.state && !S.state.playing) api('play');
+}
+function markSync() {
+  const s = LY.sync;
+  if (!s) return;
+  LY.els.forEach((el, i) => { el.classList.toggle('cursor', i === s.i); el.classList.toggle('marked', i in s.marks); });
+  lyScrollTo(LY.els[s.i]);
+  $('#ly-sync-count').textContent = t('ly.sync_count', { n: Object.keys(s.marks).length, total: LY.lines.filter(l => l.text).length });
+}
+function syncTap() {
+  const s = LY.sync;
+  if (!s || s.i < 0) return;
+  s.marks[s.i] = Math.round(posNow() * 100) / 100;
+  s.stack.push(s.i);
+  const n = lyNextLine(s.i + 1);
+  if (n < 0) { finishSync(); return; }
+  s.i = n;
+  markSync();
+}
+function syncUndo() {
+  const s = LY.sync;
+  if (!s || !s.stack.length) return;
+  const i = s.stack.pop();
+  delete s.marks[i];
+  s.i = i;
+  markSync();
+}
+async function finishSync(cancel = false) {
+  const s = LY.sync;
+  if (!s) return;
+  LY.sync = null;
+  $('#ly-sync').hidden = true;
+  $('#panel-lyrics').classList.remove('syncing');
+  LY.els.forEach(el => el.classList.remove('cursor', 'marked'));
+  LY.cur = LY.next = -2; LY.follow = null;
+  if (cancel) return;
+  if (S.state && S.state.playing) api('pause');
+  const times = Object.entries(s.marks).map(([i, v]) => [+i, v]);
+  if (times.length) showLyrics(await api('lyrics_times', { times }));
+}
+function openLyricsEditor() {
+  closeMenus();
+  $('#ly-text').value = LY.text;
+  $('#ly-align-wrap').hidden = !LY.hasVoice;
+  $('#ly-align').checked = !LY.timed;     // lyrics already in time (maybe fine-tuned by hand) are kept as they are
+  $('#dlg-lyrics').showModal();
+  $('#ly-text').focus();
+}
+async function lyricsAction(a) {
+  closeMenus();
+  if (a === 'edit') openLyricsEditor();
+  else if (a === 'open') showLyrics(await api('lyrics_open'));
+  else if (a === 'sync') startSync();
+  else if (a === 'align') showLyrics(await api('lyrics_align'));
+}
+function bindLyrics() {
+  $('#b-lyrics').onclick = toggleLyrics;
+  $('#ly-follow').onclick = () => api('options', { lyrics_follow: !(S.state && S.state.lyrics && S.state.lyrics.follow) });
+  $('#ly-more').onclick = ev => { ev.stopPropagation(); openMenu($('#menu-lyrics')); };
+  $$('#menu-lyrics button').forEach(b => b.onclick = () => lyricsAction(b.dataset.ly));
+  let wait = null, pending = 0;
+  const nudge = d => {   // several clicks in a row become one change
+    pending = Math.round((pending + d) * 10) / 10;
+    clearTimeout(wait);
+    wait = setTimeout(async () => { const v = pending; pending = 0; if (v) showLyrics(await api('lyrics_shift', { seconds: v })); }, 350);
+  };
+  const dec = v => (S.lang === 'en' ? v : v.replace('.', ','));
+  $('#ly-earlier').textContent = dec('−0.1 s');
+  $('#ly-later').textContent = dec('+0.1 s');
+  $('#ly-earlier').onclick = () => nudge(-0.1);
+  $('#ly-later').onclick = () => nudge(0.1);
+  const box = $('#ly-list');
+  box.addEventListener('wheel', () => { LY.hold = performance.now() + 5000; }, { passive: true });
+  box.addEventListener('pointerdown', e => { if (e.target === box) LY.hold = performance.now() + 5000; });
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-ly]');
+    if (b) { lyricsAction(b.dataset.ly); return; }
+    const el = e.target.closest('.ly-line');
+    if (!el || String(window.getSelection() || '').length) return;   // selecting text to copy is not a click
+    const i = +el.dataset.i;
+    if (LY.sync) { LY.sync.i = i; markSync(); return; }
+    const l = LY.lines[i];
+    if (l && l.t != null && S.state && !S.state.recording) { LY.hold = 0; api('seek', { t: Math.max(0, l.t - 1) }); }
+  });
+  $('#ly-sync-now').onclick = syncTap;
+  $('#ly-sync-undo').onclick = syncUndo;
+  $('#ly-sync-done').onclick = () => finishSync();
+  $('#ly-cancel').onclick = () => $('#dlg-lyrics').close();
+  $('#ly-save').onclick = async () => {
+    const r = await api('lyrics_save', { text: $('#ly-text').value, align: !$('#ly-align-wrap').hidden && $('#ly-align').checked });
+    if (r) { $('#dlg-lyrics').close(); showLyrics(r); }
+  };
+}
+function toggleLyrics() { api('options', { lyrics_show: !(S.state && S.state.lyrics && S.state.lyrics.show) }); }
+
 // ---------------------------------------------------------------- frame by frame
 function frame() {
   try {
     const x = posNow();
-    if (S.song) { updateNow(x); drawTimeline(x); }
+    if (S.song) { updateNow(x); drawTimeline(x); updateLyrics(x); }
     if (S.state && S.state.recording && S.recStart) {
       const tx = t('ui.stop_n', { time: fmt((performance.now() - S.recStart) / 1000) });
       if (changed('rec', tx)) $('#b-record-tx').textContent = tx;
@@ -987,6 +1181,7 @@ function bindButtons() {
   $('#tour-skip').onclick = () => tour(TOUR.length);
   $('#btn-export-mix').onclick = () => api('export', { kind: 'mix' });
   $('#btn-folder').onclick = () => api('open_folder', { which: 'takes' });
+  bindLyrics();
   let lastBack = 0;
   window.addEventListener('focus', () => {  // back from another window: the list of songs may have changed
     if (S.state && !S.state.recording && performance.now() - lastBack > 3000) { lastBack = performance.now(); api('rescan'); }
@@ -999,8 +1194,13 @@ function bindButtons() {
   document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
     if (e.target.closest('input:not([type=range]), select, textarea')) return;
-    if ($('#dlg-calibrate').open || $('#dlg-help').open || $('#dlg-analysis').open) return;
+    if ($('#dlg-calibrate').open || $('#dlg-help').open || $('#dlg-analysis').open || $('#dlg-lyrics').open) return;
     const k = e.key;
+    if (LY.sync) {
+      if (k === 'Enter') { e.preventDefault(); if (!e.repeat) syncTap(); return; }
+      if (k === 'Backspace') { e.preventDefault(); syncUndo(); return; }
+      if (k === 'Escape') { e.preventDefault(); finishSync(); return; }
+    }
     if (/^[1-9]$/.test(k) && S.modes && S.modes[+k - 1]) { e.preventDefault(); if (!e.repeat) api('mode', { mode: S.modes[+k - 1] }); return; }
     const actions = {
       ' ': () => api('toggle_play'), r: () => api('toggle_record'), R: () => api('toggle_record'),
@@ -1008,6 +1208,7 @@ function bindButtons() {
       l: toggleLoop, L: toggleLoop,
       c: () => api('options', { count_in: !S.state.count_in }), C: () => api('options', { count_in: !S.state.count_in }),
       m: () => api('options', { metronome: !S.state.metronome }), M: () => api('options', { metronome: !S.state.metronome }),
+      k: toggleLyrics, K: toggleLyrics,
       '?': () => $('#dlg-help').showModal(),
     };
     if (actions[k]) { e.preventDefault(); if (e.repeat) return; actions[k](); }

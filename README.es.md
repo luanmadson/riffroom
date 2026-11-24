@@ -30,6 +30,9 @@ Hecho para practicar guitarra en casa, con la pedalera conectada a la computador
 - **Comparar**:
   - cada parte toca la original o una toma tuya;
   - favoritas, cambiar nombre, borrar (con deshacer), exportar MP3.
+- **Letra**, opcional: la línea que se canta se ilumina y la letra avanza sola, o queda solo el texto, para leer.
+  - Pégala o deja un archivo `.lrc` (letra con el tiempo de cada línea) en la carpeta de la canción: Riffroom lo alinea con la voz separada.
+  - Sin tiempos, márcalos mientras suena, pulsando Enter al empezar cada línea.
 - **Importar una canción con IA**: convierte un MP3 en una canción para ensayar, en tu computadora.
   1. [Demucs](https://github.com/adefossez/demucs) separa los instrumentos.
   2. [beat-this](https://github.com/CPJKU/beat_this) encuentra los pulsos y los compases.
@@ -150,6 +153,16 @@ E5 D5,C5 A5 -
 
 La app calcula el grado de cada acorde y dibuja la forma. La canción de demostración trae un ejemplo completo.
 
+### Letra (`lyrics.lrc`)
+
+Riffroom no busca letras: las pones tú. El botón **Letra** (tecla K) la muestra junto a la banda.
+
+- **Pegar**: ⋯ > Editar o pegar la letra. Texto simple (una línea por cada línea cantada, una línea en blanco entre estrofas) o LRC, con el tiempo de cada línea: `[01:04.17]Primera línea`.
+- **Desde un archivo**: un `.lrc` en la carpeta de la canción (o junto a su `riffroom.json`) se lee la primera vez que se abre la canción. Esos archivos suelen tener los tiempos de la grabación original, que empieza en otro punto que las pistas separadas. Riffroom desplaza los tiempos para alinearlos con la voz separada, cuando la canción la tiene, y guarda su copia como `lyrics.lrc`, junto al `riffroom.json`. El archivo original no cambia.
+- **Ajuste fino**: los botones −0,1 s y +0,1 s mueven todas las líneas; ⋯ > Alinear con la voz de la canción lo intenta de nuevo.
+- **Sin tiempos**: ⋯ > Marcar los tiempos mientras suena. Pulsa Enter (o **Ahora**) cuando empiece cada línea; Retroceso vuelve una línea; Esc termina y guarda.
+- **Seguir** activado: la línea que se canta se ilumina un poco antes y la lista avanza sola. Desactivado: solo el texto, para leer. Haz clic en una línea para tocar desde ahí.
+
 ## Con un asistente de IA
 
 Riffroom trae un servidor MCP ([app/mcp_server.py](app/mcp_server.py)). Con él, un asistente de IA conduce tu práctica. Por ejemplo:
@@ -181,6 +194,7 @@ Si Riffroom está cerrado cuando el asistente lo necesita, el servidor lo abre.
 | L | repetir el tramo, activar y desactivar |
 | C | cuenta, activar y desactivar |
 | M | metrónomo, activar y desactivar |
+| K | letra, mostrar y ocultar |
 | 1 2 3… | vas a tocar: los botones del panel Banda, en orden |
 | ? | ayuda |
 
@@ -191,6 +205,7 @@ Si Riffroom está cerrado cuando el asistente lo necesita, el servidor lo abre.
 | Tomas | `Grabaciones\Tomas\`, dentro de la carpeta de la canción: FLAC y una ficha `.json`. En inglés, `Takes\`; en portugués, `Gravações\Tentativas\`. Vale la carpeta que ya exista. |
 | Tomas borradas | `Grabaciones\Tomas\Papelera\` |
 | MP3 exportados | `Grabaciones\Exportados\` |
+| Letra | `lyrics.lrc`, junto al `riffroom.json` de la canción |
 | Configuración y registro | `%LOCALAPPDATA%\Riffroom\` (carpetas de canciones, idioma, entrada, ajuste del tiempo, mezcla de cada canción) |
 
 ## Pruebas

@@ -30,6 +30,9 @@ Riffroom was made for practicing guitar at home with a multi-effects pedal conne
 - **Compare**:
   - each part plays the original or one of your takes;
   - mark favorites, rename, delete (with undo), export MP3.
+- **Lyrics**, optional: the line being sung lights up and the lyrics scroll by themselves, or just the text, to read.
+  - Paste them, or leave an `.lrc` file (lyrics with the time of each line) in the song folder: Riffroom lines it up with the separated voice.
+  - Without times, mark them while the song plays, pressing Enter at the start of each line.
 - **Import a song with AI**: turn an MP3 into a practice song, on your computer.
   1. [Demucs](https://github.com/adefossez/demucs) separates the instruments.
   2. [beat-this](https://github.com/CPJKU/beat_this) finds the beats and the bars.
@@ -150,6 +153,16 @@ E5 D5,C5 A5 -
 
 Riffroom works out the degree of each chord and draws the shape. The demo song has a complete example.
 
+### Lyrics (`lyrics.lrc`)
+
+Riffroom does not fetch lyrics: they come from you. The **Lyrics** button (key K) shows them next to the band.
+
+- **Paste them**: ⋯ > Edit or paste the lyrics. Plain text (a line for each sung line, a blank line between verses) or LRC, with the time of each line: `[01:04.17]First line`.
+- **From a file**: an `.lrc` in the song folder (or next to its `riffroom.json`) is read the first time the song opens. These files are usually timed to the original record, which starts at a different point than the separated tracks. Riffroom shifts the times to line them up with the separated voice, when the song has one, and keeps its copy as `lyrics.lrc`, next to `riffroom.json`. The original file is not changed.
+- **Fine-tuning**: the −0.1 s and +0.1 s buttons move every line; ⋯ > Line up with the voice tries again.
+- **Without times**: ⋯ > Mark the times while it plays. Press Enter (or **Now**) when each line starts; Backspace goes back a line; Esc finishes and saves.
+- **Follow** on: the line being sung lights up a moment early and the list scrolls by itself. Off: just the text, to read. Click a line to play from it.
+
 ## With an AI assistant
 
 Riffroom comes with an MCP server ([app/mcp_server.py](app/mcp_server.py)). With it, an AI assistant can run a practice session for you. For example:
@@ -166,6 +179,7 @@ The assistant sees only what the tools return: the structure of the song, the st
 - the band: `set_part`, `set_target`, `set_options`;
 - recording and takes: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take`, `analyze_take`, `compare_takes`, `export_mp3`;
 - preparing songs: `set_chords`, `prepare_song`, `import_song`, `get_job`;
+- lyrics: `get_lyrics` (each line with its second, bar and section), `set_lyrics`, `shift_lyrics`;
 - `calibrate_latency` and `get_status`.
 
 There is also a `coach_session` prompt.
@@ -196,6 +210,7 @@ If Riffroom is closed when the assistant needs it, the server opens it.
 | L | loop on and off |
 | C | count-in on and off |
 | M | metronome on and off |
+| K | lyrics, show and hide |
 | 1 2 3… | "you will play": the buttons of the Band panel, in order |
 | ? | help |
 
@@ -206,6 +221,7 @@ If Riffroom is closed when the assistant needs it, the server opens it.
 | Takes | `Takes\`, in the song folder: FLAC plus a `.json` record. In Portuguese, `Gravações\Tentativas\`; in Spanish, `Grabaciones\Tomas\`. The folder that already exists is used. |
 | Deleted takes | `Takes\Trash\` |
 | Exported MP3 | `Exports\` |
+| Lyrics | `lyrics.lrc`, next to the song's `riffroom.json` |
 | Settings and log | `%LOCALAPPDATA%\Riffroom\` (music folders, language, input, timing fix, the mix of each song) |
 
 ## How it works
@@ -221,6 +237,7 @@ If Riffroom is closed when the assistant needs it, the server opens it.
   - finds each strum with log spectral flux, refined to about 1 ms on the envelope above 1.5 kHz (the pick transient, which survives distortion and compression);
   - matches each strum to the beat subdivisions and to the attacks of the original part.
 - **[app/ai/](app/ai/)**: Demucs, beat-this, and chord suggestions from chroma (librosa) per beat, with chord templates and Viterbi smoothing. When the bar starts are unclear, the bar length (12/8 against 6/8) is chosen with the help of the chord changes.
+- **[app/lyrics.py](app/lyrics.py)**: reads and writes LRC and lines the lyrics up with the separated voice. First the stretch of each line against where the voice sings, within ±20 s (the long gaps, like the intro and the solos, make it unambiguous); then the start of each line on a rise of the voice's loudness, to 5 ms.
 - **[app/prepare.py](app/prepare.py)**: recognizes the tracks, sets the volume of each part by least squares against the whole song, and builds the bars, chords and sections.
 - **[demo/make_demo.py](demo/make_demo.py)**: synthesizes the demo song (Karplus-Strong guitars and bass, synthesized drums).
 

@@ -30,6 +30,9 @@ Feito para estudar guitarra em casa, com a pedaleira ligada no computador pela U
 - **Comparar**:
   - cada parte toca a original ou uma tentativa sua;
   - favoritas, renomear, apagar (com desfazer), exportar MP3.
+- **Letra**, opcional: a linha cantada acende e a letra rola sozinha, ou fica só o texto, para ler.
+  - Cole a letra ou deixe um arquivo `.lrc` (letra com o tempo de cada linha) na pasta da música: o Riffroom o alinha pela voz separada.
+  - Sem tempos, marque enquanto a música toca, apertando Enter no começo de cada linha.
 - **Importar música com IA**: transforma um MP3 em música de ensaio, no seu computador.
   1. O [Demucs](https://github.com/adefossez/demucs) separa os instrumentos.
   2. O [beat-this](https://github.com/CPJKU/beat_this) acha os pulsos e os compassos.
@@ -150,6 +153,16 @@ E5 D5,C5 A5 -
 
 O app calcula o grau de cada acorde e desenha a digitação. A música de demonstração traz um exemplo completo.
 
+### Letra (`lyrics.lrc`)
+
+O Riffroom não busca letras: elas vêm de você. O botão **Letra** (tecla K) mostra a letra ao lado da banda.
+
+- **Colar**: ⋯ > Editar ou colar a letra. Texto simples (uma linha para cada linha cantada, uma linha em branco entre as estrofes) ou LRC, com o tempo de cada linha: `[01:04.17]Primeira linha`.
+- **De um arquivo**: um `.lrc` na pasta da música (ou junto do `riffroom.json` dela) é lido na primeira vez que a música abre. Esses arquivos costumam ter os tempos da gravação original, que começa num ponto diferente das faixas separadas. O Riffroom desloca os tempos para alinhar com a voz separada, quando a música tem, e guarda a cópia dele como `lyrics.lrc`, junto do `riffroom.json`. O arquivo original não muda.
+- **Ajuste fino**: os botões −0,1 s e +0,1 s movem todas as linhas; ⋯ > Alinhar pela voz da música tenta de novo.
+- **Sem tempos**: ⋯ > Marcar os tempos enquanto toca. Aperte Enter (ou **Agora**) quando cada linha começar; Backspace volta uma linha; Esc termina e salva.
+- **Acompanhar** ligado: a linha cantada acende um pouco antes e a lista rola sozinha. Desligado: só o texto, para ler. Clique numa linha para tocar dali.
+
 ## Com um assistente de IA
 
 O Riffroom vem com um servidor MCP ([app/mcp_server.py](app/mcp_server.py)). Com ele, um assistente de IA conduz o seu estudo. Por exemplo:
@@ -166,6 +179,7 @@ O assistente vê só o que as ferramentas devolvem: a estrutura da música, o es
 - banda: `set_part`, `set_target`, `set_options`;
 - gravar e tentativas: `record_take`, `stop_recording`, `list_takes`, `play_take`, `update_take`, `delete_take`, `analyze_take`, `compare_takes`, `export_mp3`;
 - preparar músicas: `set_chords`, `prepare_song`, `import_song`, `get_job`;
+- letra: `get_lyrics` (cada linha com o segundo, o compasso e a parte da música), `set_lyrics`, `shift_lyrics`;
 - `calibrate_latency` e `get_status`.
 
 Há também o prompt `coach_session`.
@@ -191,6 +205,7 @@ Se o Riffroom estiver fechado quando o assistente precisar dele, o servidor o ab
 | L | repetir o trecho, liga e desliga |
 | C | contagem, liga e desliga |
 | M | metrônomo, liga e desliga |
+| K | letra, mostra e esconde |
 | 1 2 3… | você vai tocar: os botões do painel Banda, na ordem |
 | ? | ajuda |
 
@@ -201,6 +216,7 @@ Se o Riffroom estiver fechado quando o assistente precisar dele, o servidor o ab
 | Tentativas | `Gravações\Tentativas\`, dentro da pasta da música: FLAC e uma ficha `.json`. Em inglês, `Takes\`; em espanhol, `Grabaciones\Tomas\`. Vale a pasta que já existir. |
 | Tentativas apagadas | `Gravações\Tentativas\Lixeira\` |
 | MP3 exportados | `Gravações\Exportados\` |
+| Letra | `lyrics.lrc`, junto do `riffroom.json` da música |
 | Configuração e registro | `%LOCALAPPDATA%\Riffroom\` (pastas de músicas, língua, entrada, ajuste do tempo, mix de cada música) |
 
 ## Como funciona
